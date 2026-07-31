@@ -331,7 +331,6 @@
       renderExercises();
     }
 
-    // Abre/Fecha a caixa de login segura na tela
     window.toggleMasterMode = function() {
       if (!isMasterMode) {
         const card = document.getElementById('login-card');
@@ -346,7 +345,6 @@
       }
     };
 
-    // Executa o login seguro com bolinhas ocultas via Firebase Auth
     window.executeLogin = function() {
       const pass = document.getElementById('master-pass-input').value;
       if (!pass) return;
@@ -362,7 +360,6 @@
         });
     };
 
-    // Gerenciamento de Atletas
     function initAthleteSelector() {
       const select = document.getElementById('athlete-selector');
       select.innerHTML = '';
@@ -577,14 +574,27 @@
 
       exercisesList.forEach(cat => {
         let filteredItems = cat.items.filter(exName => {
-          if (currentFilter === 'ALL') return true; 
-          
           const exData = monthData[exName] || {};
           const treinoAssinalado = (exData.treino || "").toUpperCase();
-          return treinoAssinalado.includes(currentFilter);
+          
+          // Verifica se passa pelo Filtro (Todos, A, B ou C)
+          const matchesFilter = (currentFilter === 'ALL') || treinoAssinalado.includes(currentFilter);
+          if (!matchesFilter) return false;
+
+          // Se NÃO estiver no Modo Master (Modo Leitura), esconde os exercícios totalmente em branco
+          if (!isMasterMode) {
+            const hasData = (exData.treino && exData.treino.trim() !== "") || 
+                            (exData.ordem && exData.ordem.trim() !== "") || 
+                            (exData.serie && exData.serie.trim() !== "") || 
+                            (exData.rep && exData.rep.trim() !== "") || 
+                            (exData.pausa && exData.pausa.trim() !== "");
+            if (!hasData) return false;
+          }
+
+          return true;
         });
 
-        if (currentFilter !== 'ALL' && filteredItems.length === 0) return;
+        if (filteredItems.length === 0) return;
 
         const card = document.createElement('div');
         card.className = `bg-white rounded-xl shadow-md border overflow-hidden`;
@@ -594,12 +604,6 @@
 
         let tableRows = filteredItems.map(exName => {
           const exData = monthData[exName] || { treino: "", ordem: "", serie: "", rep: "", pausa: "" };
-
-          const classTreino = exData.treino ? cat.inputHighlight : emptyClass;
-          const classOrdem  = exData.ordem  ? cat.inputHighlight : emptyClass;
-          const classSerie  = exData.serie  ? cat.inputHighlight : emptyClass;
-          const classRep    = exData.rep    ? cat.inputHighlight : emptyClass;
-          const classPausa  = exData.pausa  ? cat.inputHighlight : emptyClass;
 
           const disabledAttr = !isMasterMode ? 'disabled' : '';
           const disabledStyle = !isMasterMode ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : '';
