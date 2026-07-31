@@ -43,7 +43,7 @@
       <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 text-center md:text-left">
         
         <div class="flex flex-col sm:flex-row items-center gap-4">
-          <img src="minha-foto.jpg" onerror="this.src='https://i.imgur.com/8Q96Slx.png'" alt="Minha Foto" class="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-full border-4 border-blue-600 shadow-md">
+          <img id="user-avatar" src="minha-foto.jpg" onerror="this.src='https://i.imgur.com/8Q96Slx.png'" alt="Foto do Perfil" class="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-full border-4 border-blue-600 shadow-md">
           <div>
             <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Meu Controle de Treinos</h1>
             <p class="text-xs text-slate-500">Gerenciamento diário e mensal de performance</p>
@@ -70,39 +70,69 @@
         </div>
       </div>
       
-      <!-- CONTROLES DE ATLETA, ANO E NÍVEL (SOMENTE LOGADO) -->
-      <div id="controls-bar" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-200 items-center">
-        
-        <!-- SELETOR DE PERFIL -->
-        <div class="flex items-center gap-2 justify-center md:justify-start">
-          <span class="font-bold text-slate-700 text-sm">Perfil:</span>
-          <select id="athlete-selector" class="border border-blue-300 rounded p-1.5 font-bold text-blue-800 bg-blue-50 cursor-pointer text-sm" onchange="changeAthlete()">
-          </select>
-          <button onclick="addNewAthlete()" id="add-athlete-btn" class="hidden px-2 py-1.5 bg-blue-600 text-white text-xs font-bold rounded shadow hover:bg-blue-700 transition" title="Adicionar Novo Perfil">＋</button>
+      <!-- CONTROLES DE PERFIL, ANO E NÍVEL (SOMENTE LOGADO) -->
+      <div id="controls-bar" class="hidden space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-200 items-center">
+          
+          <!-- SELETOR DE PERFIL + EXCLUIR + ADICIONAR -->
+          <div class="flex items-center gap-2 justify-center md:justify-start flex-wrap">
+            <span class="font-bold text-slate-700 text-sm">Perfil:</span>
+            <select id="athlete-selector" class="border border-blue-300 rounded p-1.5 font-bold text-blue-800 bg-blue-50 cursor-pointer text-sm" onchange="changeAthlete()">
+            </select>
+            <button onclick="addNewAthlete()" id="add-athlete-btn" class="hidden px-2 py-1.5 bg-blue-600 text-white text-xs font-bold rounded shadow hover:bg-blue-700 transition" title="Adicionar Novo Perfil">＋</button>
+            <button onclick="deleteCurrentAthlete()" id="delete-athlete-btn" class="hidden px-2 py-1.5 bg-red-500 text-white text-xs font-bold rounded shadow hover:bg-red-600 transition" title="Excluir Perfil Atual">🗑️</button>
+          </div>
+
+          <div class="flex items-center gap-3 justify-center">
+            <span class="font-bold text-slate-700 text-sm">Ano:</span>
+            <select id="year-selector" class="border border-slate-300 rounded p-1.5 font-bold text-slate-700 bg-white cursor-pointer text-sm" onchange="changeYear()">
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2 flex-wrap justify-center md:justify-end">
+            <span class="font-bold text-slate-700 text-sm mr-1">Nível:</span>
+            <div class="flex flex-wrap gap-1.5 justify-center" id="level-container"></div>
+          </div>
         </div>
 
-        <div class="flex items-center gap-3 justify-center">
-          <span class="font-bold text-slate-700 text-sm">Ano:</span>
-          <select id="year-selector" class="border border-slate-300 rounded p-1.5 font-bold text-slate-700 bg-white cursor-pointer text-sm" onchange="changeYear()">
-          </select>
-        </div>
-
-        <div class="flex items-center gap-2 flex-wrap justify-center md:justify-end">
-          <span class="font-bold text-slate-700 text-sm mr-1">Nível:</span>
-          <div class="flex flex-wrap gap-1.5 justify-center" id="level-container"></div>
+        <!-- CARD DE DADOS DO ATLETA -->
+        <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">Data de Nascimento:</label>
+            <div class="flex items-center gap-1">
+              <input type="date" id="bio-dob" onchange="updateBioData()" class="w-full border border-slate-300 rounded p-1 bg-white font-medium">
+              <span id="bio-age" class="font-bold text-blue-700 whitespace-nowrap"></span>
+            </div>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">Gênero:</label>
+            <select id="bio-gender" onchange="updateBioData()" class="w-full border border-slate-300 rounded p-1 bg-white font-medium">
+              <option value="">Selecione</option>
+              <option value="Masculino">Masculino</option>
+              <option value="Feminino">Feminino</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">Altura (m):</label>
+            <input type="text" id="bio-height" placeholder="Ex: 1.75" oninput="updateBioData()" class="w-full border border-slate-300 rounded p-1 bg-white font-medium text-center">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">Peso (kg):</label>
+            <input type="text" id="bio-weight" placeholder="Ex: 75.5" oninput="updateBioData()" class="w-full border border-slate-300 rounded p-1 bg-white font-medium text-center">
+          </div>
+          <div class="col-span-2 sm:col-span-1 flex items-end">
+            <div id="bio-status" class="w-full text-center text-[11px] font-bold text-green-700 bg-green-100 py-1 rounded border border-green-200 hidden">Dados Salvos!</div>
+          </div>
         </div>
       </div>
     </header>
 
-    <!-- TELA DE BOAS-VINDAS / DESLOGADO (EXIBIDA QUANDO NÃO LOGADO) -->
+    <!-- TELA DE BOAS-VINDAS / DESLOGADO -->
     <div id="logged-out-card" class="bg-white p-8 sm:p-12 rounded-xl shadow-md border border-slate-200 text-center space-y-4">
-      <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-2xl shadow-inner">
-        🔒
-      </div>
+      <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-2xl shadow-inner">🔒</div>
       <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Acesso Restrito ao Controle de Treinos</h2>
-      <p class="text-sm text-slate-500 max-w-md mx-auto">
-        Para preservar a privacidade das informações e a identidade dos atletas, faça login com sua conta do Google para visualizar o seu plano de treinos.
-      </p>
+      <p class="text-sm text-slate-500 max-w-md mx-auto">Para preservar a privacidade das informações e a identidade dos atletas, faça login com sua conta do Google para visualizar o seu plano de treinos.</p>
       <button onclick="handleGoogleAuth()" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md transition-all cursor-pointer">
         <svg class="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
@@ -114,7 +144,7 @@
       </button>
     </div>
 
-    <!-- ÁREA PRINCIPAL DO TREINO (OCULTA QUANDO DESLOGADO) -->
+    <!-- ÁREA PRINCIPAL DO TREINO -->
     <div id="main-content" class="hidden space-y-6">
 
       <!-- CALENDÁRIO DIÁRIO -->
@@ -159,6 +189,7 @@
               <button onclick="applyFilter('A')" id="btn-filter-A" class="filter-btn px-3 py-1.5 text-xs font-bold rounded-md bg-white text-slate-500 hover:bg-slate-200 transition-all whitespace-nowrap">Treino A</button>
               <button onclick="applyFilter('B')" id="btn-filter-B" class="filter-btn px-3 py-1.5 text-xs font-bold rounded-md bg-white text-slate-500 hover:bg-slate-200 transition-all whitespace-nowrap">Treino B</button>
               <button onclick="applyFilter('C')" id="btn-filter-C" class="filter-btn px-3 py-1.5 text-xs font-bold rounded-md bg-white text-slate-500 hover:bg-slate-200 transition-all whitespace-nowrap">Treino C</button>
+              <button onclick="applyFilter('PREFILLED')" id="btn-filter-PREFILLED" class="filter-btn px-3 py-1.5 text-xs font-bold rounded-md bg-white text-slate-500 hover:bg-slate-200 transition-all whitespace-nowrap">Preenchidos</button>
             </div>
             
             <button onclick="shareWhatsApp()" class="flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold rounded-lg bg-green-500 hover:bg-green-600 text-white shadow-sm transition-all whitespace-nowrap">
@@ -233,25 +264,29 @@
         const loggedOutCard = document.getElementById('logged-out-card');
         const mainContent = document.getElementById('main-content');
         const controlsBar = document.getElementById('controls-bar');
+        const avatarImg = document.getElementById('user-avatar');
 
         if (user) {
           const userEmail = (user.email || "").toLowerCase();
           const userName = user.displayName || userEmail.split('@')[0];
+          
+          if (user.photoURL) {
+            avatarImg.src = user.photoURL;
+          }
 
           isMasterUser = (userEmail === MASTER_EMAIL.toLowerCase());
 
           document.getElementById('auth-btn-text').innerText = `Sair (${userName})`;
           document.getElementById('auth-btn').className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-green-800 hover:bg-green-200 text-xs font-bold border border-green-300 transition-all shadow-sm cursor-pointer";
 
-          // Mostra o conteúdo principal e esconde o card de deslogado
           loggedOutCard.classList.add('hidden');
           mainContent.classList.remove('hidden');
           controlsBar.classList.remove('hidden');
 
-          // Se o usuário não existe nos atletas, cadastra automaticamente
           if (!appData.athletes[userName]) {
             appData.athletes[userName] = {
               level: "Iniciante",
+              bio: { dob: "", gender: "", height: "", weight: "" },
               calendar: {},
               monthlyExercises: {}
             };
@@ -260,20 +295,21 @@
 
           if (isMasterUser) {
             document.getElementById('add-athlete-btn').classList.remove('hidden');
+            document.getElementById('delete-athlete-btn').classList.remove('hidden');
           } else {
-            // Usuário comum fica fixo no seu próprio perfil
             appData.currentAthlete = userName;
             document.getElementById('add-athlete-btn').classList.add('hidden');
+            document.getElementById('delete-athlete-btn').classList.add('hidden');
           }
 
           initAthleteSelector();
           renderAll();
 
         } else {
-          // SE ESTIVER DESLOGADO: Esconde tudo e mostra o card de login
           isMasterUser = false;
+          avatarImg.src = "minha-foto.jpg";
           document.getElementById('auth-btn-text').innerText = "Entrar com Google";
-          document.getElementById('auth-btn').className = "flex items-center gap-2 px-4 py-1.5 rounded-full bg-white text-slate-700 hover:bg-slate-50 text-xs font-bold border border-slate-300 transition-all shadow-sm cursor-pointer";
+          document.getElementById('auth-btn').className = "flex items-center gap-2 px-4 py-2 rounded-full bg-white text-slate-700 hover:bg-slate-50 text-xs font-bold border border-slate-300 transition-all shadow-sm cursor-pointer";
 
           loggedOutCard.classList.remove('hidden');
           mainContent.classList.add('hidden');
@@ -304,10 +340,7 @@
     const statusList = ["", "A", "B", "C", "S", "D", "X", "F"];
 
     let appData = JSON.parse(localStorage.getItem('treino_data')) || {};
-    
-    if (!appData.athletes) {
-      appData.athletes = {};
-    }
+    if (!appData.athletes) { appData.athletes = {}; }
 
     let currentYear = new Date().getFullYear();
     if(currentYear < 2026) currentYear = 2026; 
@@ -384,21 +417,72 @@
       const currentAthleteData = appData.athletes[appData.currentAthlete];
       if(!currentAthleteData.calendar) currentAthleteData.calendar = {};
       if(!currentAthleteData.monthlyExercises) currentAthleteData.monthlyExercises = {};
+      if(!currentAthleteData.bio) currentAthleteData.bio = { dob: "", gender: "", height: "", weight: "" };
 
       document.getElementById('calendar-athlete-name').innerText = appData.currentAthlete;
       document.getElementById('exercise-athlete-name').innerText = appData.currentAthlete;
 
+      renderBio();
       renderLevels();
       renderCalendar();
       renderExercises();
     }
+
+    function renderBio() {
+      const athlete = appData.athletes[appData.currentAthlete];
+      const bio = athlete.bio || { dob: "", gender: "", height: "", weight: "" };
+
+      document.getElementById('bio-dob').value = bio.dob || "";
+      document.getElementById('bio-gender').value = bio.gender || "";
+      document.getElementById('bio-height').value = bio.height || "";
+      document.getElementById('bio-weight').value = bio.weight || "";
+
+      // Cálculo de idade
+      const ageSpan = document.getElementById('bio-age');
+      if (bio.dob) {
+        const today = new Date();
+        const birthDate = new Date(bio.dob);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        ageSpan.innerText = `(${age} anos)`;
+      } else {
+        ageSpan.innerText = "";
+      }
+
+      // Permissão de edição dos campos Bio
+      const canEdit = canEditCurrentAthlete();
+      document.getElementById('bio-dob').disabled = !canEdit;
+      document.getElementById('bio-gender').disabled = !canEdit;
+      document.getElementById('bio-height').disabled = !canEdit;
+      document.getElementById('bio-weight').disabled = !canEdit;
+    }
+
+    window.updateBioData = function() {
+      if (!canEditCurrentAthlete()) return;
+      const athlete = appData.athletes[appData.currentAthlete];
+      if (!athlete.bio) athlete.bio = {};
+
+      athlete.bio.dob = document.getElementById('bio-dob').value;
+      athlete.bio.gender = document.getElementById('bio-gender').value;
+      athlete.bio.height = document.getElementById('bio-height').value;
+      athlete.bio.weight = document.getElementById('bio-weight').value;
+
+      saveData();
+      renderBio();
+
+      const status = document.getElementById('bio-status');
+      status.classList.remove('hidden');
+      setTimeout(() => status.classList.add('hidden'), 2000);
+    };
 
     function initAthleteSelector() {
       const select = document.getElementById('athlete-selector');
       select.innerHTML = '';
 
       if (currentUser && isMasterUser) {
-        // Master vê todos os perfis
         Object.keys(appData.athletes).forEach(athleteName => {
           let opt = document.createElement('option');
           opt.value = athleteName;
@@ -408,7 +492,6 @@
         });
         select.disabled = false;
       } else if (currentUser) {
-        // Usuário comum vê e fica preso apenas ao seu perfil
         const userName = currentUser.displayName || (currentUser.email || "").split('@')[0];
         let opt = document.createElement('option');
         opt.value = userName;
@@ -435,6 +518,7 @@
         }
         appData.athletes[name] = {
           level: "Iniciante",
+          bio: { dob: "", gender: "", height: "", weight: "" },
           calendar: {},
           monthlyExercises: {}
         };
@@ -443,6 +527,24 @@
         initAthleteSelector();
         renderAll();
         alert(`✅ Perfil ${name} criado com sucesso!`);
+      }
+    };
+
+    window.deleteCurrentAthlete = function() {
+      if (!isMasterUser) return;
+      const keys = Object.keys(appData.athletes);
+      if (keys.length <= 1) {
+        alert("Não é possível excluir o último perfil restante!");
+        return;
+      }
+      const current = appData.currentAthlete;
+      if (confirm(`Tem certeza que deseja excluir permanentemente o perfil "${current}"?`)) {
+        delete appData.athletes[current];
+        appData.currentAthlete = Object.keys(appData.athletes)[0];
+        saveData();
+        initAthleteSelector();
+        renderAll();
+        alert(`🗑️ Perfil "${current}" excluído com sucesso.`);
       }
     };
 
@@ -631,10 +733,19 @@
           const exData = monthData[exName] || {};
           const treinoAssinalado = (exData.treino || "").toUpperCase();
           
-          const matchesFilter = (currentFilter === 'ALL') || treinoAssinalado.includes(currentFilter);
-          if (!matchesFilter) return false;
+          const hasAnyData = (exData.treino && exData.treino.trim() !== "") || 
+                             (exData.ordem && exData.ordem.trim() !== "") || 
+                             (exData.serie && exData.serie.trim() !== "") || 
+                             (exData.rep && exData.rep.trim() !== "") || 
+                             (exData.pausa && exData.pausa.trim() !== "");
 
-          return true;
+          if (currentFilter === 'ALL') {
+            return true;
+          } else if (currentFilter === 'PREFILLED') {
+            return hasAnyData;
+          } else {
+            return treinoAssinalado.includes(currentFilter);
+          }
         });
 
         if (filteredItems.length === 0) return;
@@ -690,7 +801,7 @@
                   <th class="p-1 sm:p-2 text-center font-semibold">Treino</th>
                   <th class="p-1 sm:p-2 text-center font-semibold">Ord.</th>
                   <th class="p-1 sm:p-2 font-semibold">Exercício</th>
-                  <th class="p-1 sm:p-2 font-semibold">Sér.</th>
+                  <th class="p-1 sm:p-2 text-center font-semibold">Sér.</th>
                   <th class="p-1 sm:p-2 text-center font-semibold">Rep.</th>
                   <th class="p-1 sm:p-2 text-center font-semibold">Pausa</th>
                 </tr>
