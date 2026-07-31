@@ -57,20 +57,16 @@
             <span id="cloud-text">Conectando...</span>
           </div>
 
-          <!-- BOTÃO MASTER / LOGIN SEGURO -->
-          <button onclick="toggleMasterMode()" id="master-btn" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 hover:bg-amber-200 text-xs font-bold border border-amber-300 transition-all shadow-sm">
-            🔒 <span id="master-btn-text">Modo Leitura (Entrar Master)</span>
+          <!-- BOTÃO LOGIN GOOGLE -->
+          <button onclick="handleGoogleAuth()" id="auth-btn" class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white text-slate-700 hover:bg-slate-50 text-xs font-bold border border-slate-300 transition-all shadow-sm">
+            <svg class="w-4 h-4" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.29v3.15C3.26 21.3 7.31 24 12 24z"/>
+              <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.29C.47 8.21 0 10.05 0 12s.47 3.79 1.29 5.42l3.99-3.15z"/>
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.58l3.99 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+            </svg>
+            <span id="auth-btn-text">Entrar com Google</span>
           </button>
-        </div>
-      </div>
-
-      <!-- PAINEL DE LOGIN SEGURO (OCULTO POR PADRÃO) -->
-      <div id="login-card" class="hidden mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-3 shadow-inner">
-        <div class="text-xs font-bold text-amber-900">🔐 Identifique-se como Administrador Master:</div>
-        <div class="flex items-center gap-2 w-full sm:w-auto">
-          <input type="password" id="master-pass-input" placeholder="Digite sua senha segura..." class="border border-amber-300 rounded px-3 py-1 text-xs outline-none bg-white w-full sm:w-56" onkeydown="if(event.key==='Enter') executeLogin()">
-          <button onclick="executeLogin()" class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded shadow transition">Entrar</button>
-          <button onclick="document.getElementById('login-card').classList.add('hidden')" class="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded">Cancelar</button>
         </div>
       </div>
       
@@ -172,11 +168,13 @@
       appId: "1:1053749503001:web:124f4b425cbec242c53688"
     };
 
+    // 🔴 INSIRA SEU E-MAIL MASTER DO GOOGLE AQUI:
+    const MASTER_EMAIL = "rss.andrade@gmail.com";
+
     let db, auth;
     let isCloudEnabled = false;
-    let isMasterMode = false;
-
-    const MASTER_EMAIL = "admin@controle.com";
+    let isMasterUser = false;
+    let currentUser = null;
 
     try {
       firebase.initializeApp(firebaseConfig);
@@ -203,23 +201,62 @@
       }
     }
 
+    // Monitora o Login do Google
     if (auth) {
       auth.onAuthStateChanged((user) => {
+        currentUser = user;
         if (user) {
-          isMasterMode = true;
-          document.getElementById('master-btn').className = "flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-100 text-green-800 hover:bg-green-200 text-xs font-bold border border-green-300 transition-all shadow-sm";
-          document.getElementById('master-btn-text').innerText = "Modo Master ATIVO (Sair)";
-          document.getElementById('add-athlete-btn').classList.remove('hidden');
-          document.getElementById('login-card').classList.add('hidden');
+          const userEmail = (user.email || "").toLowerCase();
+          const userName = user.displayName || userEmail.split('@')[0];
+
+          isMasterUser = (userEmail === MASTER_EMAIL.toLowerCase());
+
+          document.getElementById('auth-btn-text').innerText = `Sair (${userName})`;
+          document.getElementById('auth-btn').className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-green-800 hover:bg-green-200 text-xs font-bold border border-green-300 transition-all shadow-sm";
+
+          // Se o usuário não existe nos atletas, cadastra automaticamente
+          if (!appData.athletes[userName]) {
+            appData.athletes[userName] = {
+              level: "Iniciante",
+              calendar: {},
+              monthlyExercises: {}
+            };
+            saveData();
+          }
+
+          if (isMasterUser) {
+            document.getElementById('add-athlete-btn').classList.remove('hidden');
+          } else {
+            // Usuário comum é direcionado direto para o seu próprio perfil
+            appData.currentAthlete = userName;
+            document.getElementById('add-athlete-btn').classList.add('hidden');
+          }
+
         } else {
-          isMasterMode = false;
-          document.getElementById('master-btn').className = "flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 hover:bg-amber-200 text-xs font-bold border border-amber-300 transition-all shadow-sm";
-          document.getElementById('master-btn-text').innerText = "Modo Leitura (Entrar Master)";
+          isMasterUser = false;
+          document.getElementById('auth-btn-text').innerText = "Entrar com Google";
+          document.getElementById('auth-btn').className = "flex items-center gap-2 px-4 py-1.5 rounded-full bg-white text-slate-700 hover:bg-slate-50 text-xs font-bold border border-slate-300 transition-all shadow-sm";
           document.getElementById('add-athlete-btn').classList.add('hidden');
         }
+
+        initAthleteSelector();
         renderAll();
       });
     }
+
+    window.handleGoogleAuth = function() {
+      if (!currentUser) {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch((error) => {
+          alert("Erro ao realizar login com o Google.");
+          console.error(error);
+        });
+      } else {
+        auth.signOut().then(() => {
+          alert("Desconectado com sucesso.");
+        });
+      }
+    };
 
     // ==========================================
     // 2. DADOS DO APLICATIVO E MULTI-ATLETA
@@ -232,18 +269,13 @@
     
     if (!appData.athletes) {
       appData.athletes = {
-        "José": {
+        "Andrade": {
           level: appData.level || "Iniciante",
           calendar: appData.calendar || {},
           monthlyExercises: appData.monthlyExercises || {}
-        },
-        "Esposa": {
-          level: "Iniciante",
-          calendar: {},
-          monthlyExercises: {}
         }
       };
-      appData.currentAthlete = "José";
+      appData.currentAthlete = "Andrade";
     }
     if (!appData.currentAthlete || !appData.athletes[appData.currentAthlete]) {
       appData.currentAthlete = Object.keys(appData.athletes)[0];
@@ -281,8 +313,16 @@
       }
     ];
 
+    // Verifica permissão de edição do atleta selecionado
+    function canEditCurrentAthlete() {
+      if (!currentUser) return false;
+      if (isMasterUser) return true;
+      const userName = currentUser.displayName || (currentUser.email || "").split('@')[0];
+      return appData.currentAthlete === userName;
+    }
+
     // ==========================================
-    // 3. FUNÇÕES DE SUPORTE, SALVAR E MASTER
+    // 3. FUNÇÕES DE SUPORTE E SALVAR
     // ==========================================
     function saveData() {
       localStorage.setItem('treino_data', JSON.stringify(appData));
@@ -331,35 +371,6 @@
       renderExercises();
     }
 
-    window.toggleMasterMode = function() {
-      if (!isMasterMode) {
-        const card = document.getElementById('login-card');
-        card.classList.toggle('hidden');
-        if (!card.classList.contains('hidden')) {
-          document.getElementById('master-pass-input').focus();
-        }
-      } else {
-        auth.signOut().then(() => {
-          alert("🔒 Desconectado do Modo Master com sucesso.");
-        });
-      }
-    };
-
-    window.executeLogin = function() {
-      const pass = document.getElementById('master-pass-input').value;
-      if (!pass) return;
-
-      auth.signInWithEmailAndPassword(MASTER_EMAIL, pass)
-        .then(() => {
-          document.getElementById('master-pass-input').value = "";
-          alert("🔓 Modo Master ativado com sucesso!");
-        })
-        .catch((error) => {
-          alert("❌ Senha incorreta!");
-          console.error(error);
-        });
-    };
-
     function initAthleteSelector() {
       const select = document.getElementById('athlete-selector');
       select.innerHTML = '';
@@ -370,6 +381,13 @@
         if (athleteName === appData.currentAthlete) opt.selected = true;
         select.appendChild(opt);
       });
+
+      // Se for usuário comum, desabilita a troca para outros atletas
+      if (currentUser && !isMasterUser) {
+        select.disabled = true;
+      } else {
+        select.disabled = false;
+      }
     }
 
     window.changeAthlete = function() {
@@ -378,7 +396,8 @@
     };
 
     window.addNewAthlete = function() {
-      let name = prompt("Digite o nome do novo Atleta (ex: Esposa):");
+      if (!isMasterUser) return;
+      let name = prompt("Digite o nome do novo Atleta:");
       if (name && name.trim() !== "") {
         name = name.trim();
         if (appData.athletes[name]) {
@@ -462,6 +481,7 @@
       const container = document.getElementById('level-container');
       container.innerHTML = '';
       const currentAthleteData = appData.athletes[appData.currentAthlete];
+      const canEdit = canEditCurrentAthlete();
 
       levels.forEach(lvl => {
         const btn = document.createElement('button');
@@ -470,7 +490,7 @@
         }`;
         btn.innerText = lvl;
         
-        if (!isMasterMode) {
+        if (!canEdit) {
           btn.disabled = true;
           btn.classList.add('opacity-75', 'cursor-not-allowed');
         } else {
@@ -491,6 +511,7 @@
       const currentAthleteData = appData.athletes[appData.currentAthlete];
       if (!currentAthleteData.calendar) currentAthleteData.calendar = {};
       if (!currentAthleteData.calendar[currentYear]) currentAthleteData.calendar[currentYear] = {};
+      const canEdit = canEditCurrentAthlete();
 
       months.forEach((month, mIdx) => {
         const row = document.createElement('div');
@@ -511,7 +532,7 @@
             cell.className = `h-7 border border-slate-200 rounded text-center font-bold flex items-center justify-center transition-all text-[11px] ${getStatusClass(cellVal)}`;
             cell.innerText = cellVal;
 
-            if (!isMasterMode) {
+            if (!canEdit) {
               cell.classList.add('cursor-default');
             } else {
               cell.classList.add('cursor-pointer');
@@ -541,7 +562,7 @@
     }
 
     window.handleExerciseInput = function(exName, field, inputElement, highlightClass) {
-      if (!isMasterMode) return;
+      if (!canEditCurrentAthlete()) return;
       
       const currentAthleteData = appData.athletes[appData.currentAthlete];
       const monthKey = `${currentYear}-${currentExerciseMonth}`;
@@ -571,18 +592,18 @@
       const monthKey = `${currentYear}-${currentExerciseMonth}`;
       if (!currentAthleteData.monthlyExercises) currentAthleteData.monthlyExercises = {};
       const monthData = currentAthleteData.monthlyExercises[monthKey] || {};
+      const canEdit = canEditCurrentAthlete();
 
       exercisesList.forEach(cat => {
         let filteredItems = cat.items.filter(exName => {
           const exData = monthData[exName] || {};
           const treinoAssinalado = (exData.treino || "").toUpperCase();
           
-          // Verifica se passa pelo Filtro (Todos, A, B ou C)
           const matchesFilter = (currentFilter === 'ALL') || treinoAssinalado.includes(currentFilter);
           if (!matchesFilter) return false;
 
-          // Se NÃO estiver no Modo Master (Modo Leitura), esconde os exercícios totalmente em branco
-          if (!isMasterMode) {
+          // Se não tiver permissão de edição, esconde os exercícios não preenchidos
+          if (!canEdit) {
             const hasData = (exData.treino && exData.treino.trim() !== "") || 
                             (exData.ordem && exData.ordem.trim() !== "") || 
                             (exData.serie && exData.serie.trim() !== "") || 
@@ -605,8 +626,8 @@
         let tableRows = filteredItems.map(exName => {
           const exData = monthData[exName] || { treino: "", ordem: "", serie: "", rep: "", pausa: "" };
 
-          const disabledAttr = !isMasterMode ? 'disabled' : '';
-          const disabledStyle = !isMasterMode ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : '';
+          const disabledAttr = !canEdit ? 'disabled' : '';
+          const disabledStyle = !canEdit ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : '';
 
           return `
           <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
