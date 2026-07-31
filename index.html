@@ -82,13 +82,16 @@
       <div id="controls-bar" class="hidden space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-200 items-center">
           
-          <!-- SELETOR DE PERFIL + EXCLUIR + ADICIONAR -->
+          <!-- SELETOR DE PERFIL + EXCLUIR + ADICIONAR + BADGE EMAIL -->
           <div class="flex items-center gap-2 justify-center md:justify-start flex-wrap">
             <span class="font-bold text-slate-700 text-sm">Perfil:</span>
             <select id="athlete-selector" class="border border-blue-300 rounded p-1.5 font-bold text-blue-800 bg-blue-50 cursor-pointer text-sm" onchange="changeAthlete()">
             </select>
             <button onclick="addNewAthlete()" id="add-athlete-btn" class="hidden px-2 py-1.5 bg-blue-600 text-white text-xs font-bold rounded shadow hover:bg-blue-700 transition cursor-pointer" title="Adicionar Novo Perfil">＋</button>
             <button onclick="deleteCurrentAthlete()" id="delete-athlete-btn" class="hidden px-2 py-1.5 bg-red-500 text-white text-xs font-bold rounded shadow hover:bg-red-600 transition cursor-pointer" title="Excluir Perfil Atual">🗑️</button>
+            
+            <!-- EXIBIÇÃO DE E-MAIL DO PERFIL ATUAL -->
+            <span id="current-athlete-email" class="hidden items-center gap-1 px-2 py-1.5 bg-slate-100 text-slate-500 text-[10px] sm:text-xs font-medium rounded border border-slate-200 truncate max-w-[200px]"></span>
           </div>
 
           <div class="flex items-center gap-3 justify-center">
@@ -298,12 +301,17 @@
           // Cria perfil SE não existir, e salva SOMENTE ESSE PERFIL (Granular Save)
           if (!appData.athletes[userName]) {
             appData.athletes[userName] = {
+              email: userEmail, // <-- Salva o e-mail aqui
               approved: isMasterUser ? true : false,
               level: "Iniciante",
               bio: { dob: "", gender: "", height: "", weight: "" },
               calendar: {},
               monthlyExercises: {}
             };
+            saveData(userName);
+          } else if (!appData.athletes[userName].email) {
+            // Se o perfil já existe (ex: recuperado) mas sem e-mail, atualiza agora!
+            appData.athletes[userName].email = userEmail;
             saveData(userName);
           }
 
@@ -368,20 +376,7 @@
       renderAll();
     }
 
-    window.handleGoogleAuth = function() {
-      if (!currentUser) {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).catch((error) => {
-          alert("Erro ao realizar login com o Google.");
-          console.error(error);
-        });
-      } else {
-        auth.signOut().then(() => {
-          alert("Desconectado com sucesso.");
-        });
-      }
-    };
-
+    // LISTA DE PERFIS PENDENTES (COM E-MAIL AGORA)
     function renderMasterPendingList() {
       const box = document.getElementById('master-pending-box');
       const list = document.getElementById('pending-list');
@@ -398,10 +393,15 @@
       box.classList.remove('hidden');
 
       pendingUsers.forEach(userName => {
+        const userEmail = appData.athletes[userName].email || "Sem e-mail cadastrado";
         const row = document.createElement('div');
-        row.className = "flex items-center justify-between bg-white p-3 rounded-lg border border-amber-200 text-xs shadow-sm flex-wrap gap-2";
+        row.className = "flex flex-col md:flex-row md:items-center justify-between bg-white p-3 rounded-lg border border-amber-200 text-xs shadow-sm gap-3";
         row.innerHTML = `
-          <div class="font-bold text-slate-800">👤 ${userName} <span class="text-slate-400 font-normal">(Aguardando aprovação)</span></div>
+          <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+            <div class="font-bold text-slate-800 text-sm">👤 ${userName}</div>
+            <div class="text-[10px] sm:text-xs font-medium text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded w-fit">✉️ ${userEmail}</div>
+            <div class="text-slate-400 font-normal text-[10px] sm:text-xs italic">(Aguardando aprovação)</div>
+          </div>
           <div class="flex items-center gap-2">
             <button onclick="approveAthlete('${userName}')" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white font-bold rounded shadow transition cursor-pointer">Aprovar ✅</button>
             <button onclick="rejectAthlete('${userName}')" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white font-bold rounded shadow transition cursor-pointer">Recusar 🗑️</button>
@@ -463,14 +463,11 @@
       return appData.currentAthlete === userName;
     }
 
-    // ⭐ NOVA FUNÇÃO DE SALVAMENTO BLINDADA ⭐
-    // Agora o sistema salva EXCLUSIVAMENTE o perfil passado na função, evitando sobrepor todos.
     function saveData(specificAthlete = null) {
       localStorage.setItem('treino_data', JSON.stringify(appData));
       if (isCloudEnabled && isCloudLoaded) {
         const athleteToSave = specificAthlete || appData.currentAthlete;
         if (athleteToSave && appData.athletes[athleteToSave]) {
-          // Salva apenas o nó do atleta específico na nuvem
           db.ref(`meu_treino_app/athletes/${athleteToSave}`).set(appData.athletes[athleteToSave]);
         }
       }
@@ -518,6 +515,17 @@
 
       document.getElementById('calendar-athlete-name').innerText = appData.currentAthlete;
       document.getElementById('exercise-athlete-name').innerText = appData.currentAthlete;
+
+      // EXIBIÇÃO DO E-MAIL DO PERFIL SELECIONADO
+      const emailBadge = document.getElementById('current-athlete-email');
+      if (currentAthleteData.email && currentAthleteData.email !== "") {
+        emailBadge.innerText = `✉️ ${currentAthleteData.email}`;
+        emailBadge.classList.remove('hidden');
+        emailBadge.classList.add('flex');
+      } else {
+        emailBadge.classList.add('hidden');
+        emailBadge.classList.remove('flex');
+      }
 
       renderBio();
       renderLevels();
@@ -613,6 +621,7 @@
           return;
         }
         appData.athletes[name] = {
+          email: "", // Fica vazio para quem for adicionado sem o Google
           approved: true,
           level: "Iniciante",
           bio: { dob: "", gender: "", height: "", weight: "" },
