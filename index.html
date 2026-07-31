@@ -69,6 +69,14 @@
           </button>
         </div>
       </div>
+
+      <!-- PAINEL MASTER DE SOLICITAÇÕES PENDENTES DE APROVAÇÃO -->
+      <div id="master-pending-box" class="hidden bg-amber-50 border border-amber-300 p-4 rounded-xl shadow-sm space-y-3">
+        <h3 class="font-bold text-amber-900 text-sm flex items-center gap-2">
+          <span>🔔</span> Perfis Aguardando Sua Aprovação:
+        </h3>
+        <div id="pending-list" class="space-y-2"></div>
+      </div>
       
       <!-- CONTROLES DE PERFIL, ANO E NÍVEL (SOMENTE LOGADO) -->
       <div id="controls-bar" class="hidden space-y-4">
@@ -142,6 +150,18 @@
         </svg>
         Entrar com minha conta Google
       </button>
+    </div>
+
+    <!-- TELA DE AGUARDANDO APROVAÇÃO (USUÁRIO PENDENTE) -->
+    <div id="pending-card" class="hidden bg-white p-8 sm:p-12 rounded-xl shadow-md border border-amber-200 text-center space-y-4">
+      <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner">⌛</div>
+      <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Aguardando Aprovação do Administrador</h2>
+      <p class="text-sm text-slate-600 max-w-md mx-auto">
+        Olá! Seu cadastro foi realizado com sucesso. Por motivos de segurança, o <span class="font-bold text-slate-800">Administrador Master</span> precisa aprovar seu perfil antes que você possa acessar e preencher os treinos.
+      </p>
+      <div class="pt-2">
+        <button onclick="handleGoogleAuth()" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-lg transition">Sair da conta</button>
+      </div>
     </div>
 
     <!-- ÁREA PRINCIPAL DO TREINO -->
@@ -262,6 +282,7 @@
       auth.onAuthStateChanged((user) => {
         currentUser = user;
         const loggedOutCard = document.getElementById('logged-out-card');
+        const pendingCard = document.getElementById('pending-card');
         const mainContent = document.getElementById('main-content');
         const controlsBar = document.getElementById('controls-bar');
         const avatarImg = document.getElementById('user-avatar');
@@ -279,12 +300,10 @@
           document.getElementById('auth-btn-text').innerText = `Sair (${userName})`;
           document.getElementById('auth-btn').className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-green-800 hover:bg-green-200 text-xs font-bold border border-green-300 transition-all shadow-sm cursor-pointer";
 
-          loggedOutCard.classList.add('hidden');
-          mainContent.classList.remove('hidden');
-          controlsBar.classList.remove('hidden');
-
+          // Se o usuário não existe nos atletas, cadastra como PENDENTE (se não for o master)
           if (!appData.athletes[userName]) {
             appData.athletes[userName] = {
+              approved: isMasterUser ? true : false,
               level: "Iniciante",
               bio: { dob: "", gender: "", height: "", weight: "" },
               calendar: {},
@@ -293,17 +312,43 @@
             saveData();
           }
 
-          if (isMasterUser) {
-            document.getElementById('add-athlete-btn').classList.remove('hidden');
-            document.getElementById('delete-athlete-btn').classList.remove('hidden');
-          } else {
-            appData.currentAthlete = userName;
-            document.getElementById('add-athlete-btn').classList.add('hidden');
-            document.getElementById('delete-athlete-btn').classList.add('hidden');
-          }
+          // Garantir compatibilidade com contas já existentes antes dessa atualização
+          Object.keys(appData.athletes).forEach(name => {
+            if (appData.athletes[name].approved === undefined) {
+              appData.athletes[name].approved = true;
+            }
+          });
 
-          initAthleteSelector();
-          renderAll();
+          const currentAthleteData = appData.athletes[userName];
+
+          // VERIFICAÇÃO DE APROVAÇÃO DO USUÁRIO
+          if (!isMasterUser && currentAthleteData && !currentAthleteData.approved) {
+            // Mostrar tela de Pendente
+            loggedOutCard.classList.add('hidden');
+            pendingCard.classList.remove('hidden');
+            mainContent.classList.add('hidden');
+            controlsBar.classList.add('hidden');
+            document.getElementById('master-pending-box').classList.add('hidden');
+          } else {
+            // Aprovado ou Master
+            loggedOutCard.classList.add('hidden');
+            pendingCard.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+            controlsBar.classList.remove('hidden');
+
+            if (isMasterUser) {
+              document.getElementById('add-athlete-btn').classList.remove('hidden');
+              document.getElementById('delete-athlete-btn').classList.remove('hidden');
+            } else {
+              appData.currentAthlete = userName;
+              document.getElementById('add-athlete-btn').classList.add('hidden');
+              document.getElementById('delete-athlete-btn').classList.add('hidden');
+            }
+
+            initAthleteSelector();
+            renderMasterPendingList();
+            renderAll();
+          }
 
         } else {
           isMasterUser = false;
@@ -312,8 +357,10 @@
           document.getElementById('auth-btn').className = "flex items-center gap-2 px-4 py-2 rounded-full bg-white text-slate-700 hover:bg-slate-50 text-xs font-bold border border-slate-300 transition-all shadow-sm cursor-pointer";
 
           loggedOutCard.classList.remove('hidden');
+          pendingCard.classList.add('hidden');
           mainContent.classList.add('hidden');
           controlsBar.classList.add('hidden');
+          document.getElementById('master-pending-box').classList.add('hidden');
         }
       });
     }
@@ -329,6 +376,64 @@
         auth.signOut().then(() => {
           alert("Desconectado com sucesso.");
         });
+      }
+    };
+
+    // Renderiza a lista de novos perfis aguardando aprovação para o Master
+    function renderMasterPendingList() {
+      const box = document.getElementById('master-pending-box');
+      const list = document.getElementById('pending-list');
+      list.innerHTML = '';
+
+      if (!isMasterUser) {
+        box.classList.add('hidden');
+        return;
+      }
+
+      const pendingUsers = Object.keys(appData.athletes).filter(
+        name => appData.athletes[name].approved === false
+      );
+
+      if (pendingUsers.length === 0) {
+        box.classList.add('hidden');
+        return;
+      }
+
+      box.classList.remove('hidden');
+
+      pendingUsers.forEach(userName => {
+        const row = document.createElement('div');
+        row.className = "flex items-center justify-between bg-white p-3 rounded-lg border border-amber-200 text-xs shadow-sm flex-wrap gap-2";
+        row.innerHTML = `
+          <div class="font-bold text-slate-800">👤 ${userName} <span class="text-slate-400 font-normal">(Aguardando aprovação)</span></div>
+          <div class="flex items-center gap-2">
+            <button onclick="approveAthlete('${userName}')" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white font-bold rounded shadow transition">Aprovar ✅</button>
+            <button onclick="rejectAthlete('${userName}')" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white font-bold rounded shadow transition">Recusar 🗑️</button>
+          </div>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    window.approveAthlete = function(userName) {
+      if (!isMasterUser) return;
+      if (appData.athletes[userName]) {
+        appData.athletes[userName].approved = true;
+        saveData();
+        renderMasterPendingList();
+        initAthleteSelector();
+        alert(`✅ Perfil de "${userName}" aprovado com sucesso!`);
+      }
+    };
+
+    window.rejectAthlete = function(userName) {
+      if (!isMasterUser) return;
+      if (confirm(`Deseja recusar e excluir o cadastro de "${userName}"?`)) {
+        delete appData.athletes[userName];
+        saveData();
+        renderMasterPendingList();
+        initAthleteSelector();
+        alert(`🗑️ Perfil de "${userName}" excluído.`);
       }
     };
 
@@ -430,6 +535,7 @@
 
     function renderBio() {
       const athlete = appData.athletes[appData.currentAthlete];
+      if (!athlete) return;
       const bio = athlete.bio || { dob: "", gender: "", height: "", weight: "" };
 
       document.getElementById('bio-dob').value = bio.dob || "";
@@ -452,7 +558,6 @@
         ageSpan.innerText = "";
       }
 
-      // Permissão de edição dos campos Bio
       const canEdit = canEditCurrentAthlete();
       document.getElementById('bio-dob').disabled = !canEdit;
       document.getElementById('bio-gender').disabled = !canEdit;
@@ -483,12 +588,15 @@
       select.innerHTML = '';
 
       if (currentUser && isMasterUser) {
+        // Master só lista perfis já APROVADOS no selector
         Object.keys(appData.athletes).forEach(athleteName => {
-          let opt = document.createElement('option');
-          opt.value = athleteName;
-          opt.innerText = athleteName;
-          if (athleteName === appData.currentAthlete) opt.selected = true;
-          select.appendChild(opt);
+          if (appData.athletes[athleteName].approved !== false) {
+            let opt = document.createElement('option');
+            opt.value = athleteName;
+            opt.innerText = athleteName;
+            if (athleteName === appData.currentAthlete) opt.selected = true;
+            select.appendChild(opt);
+          }
         });
         select.disabled = false;
       } else if (currentUser) {
@@ -517,6 +625,7 @@
           return;
         }
         appData.athletes[name] = {
+          approved: true,
           level: "Iniciante",
           bio: { dob: "", gender: "", height: "", weight: "" },
           calendar: {},
