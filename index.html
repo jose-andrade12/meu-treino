@@ -295,7 +295,7 @@
           document.getElementById('auth-btn-text').innerText = `Sair (${userName})`;
           document.getElementById('auth-btn').className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-green-800 hover:bg-green-200 text-xs font-bold border border-green-300 transition-all shadow-sm cursor-pointer";
 
-          // Cria perfil temporário em memória caso ainda não exista
+          // Cria perfil SE não existir, e salva SOMENTE ESSE PERFIL (Granular Save)
           if (!appData.athletes[userName]) {
             appData.athletes[userName] = {
               approved: isMasterUser ? true : false,
@@ -304,7 +304,7 @@
               calendar: {},
               monthlyExercises: {}
             };
-            if (isCloudLoaded) saveData();
+            saveData(userName);
           }
 
           refreshUI();
@@ -323,7 +323,6 @@
       });
     }
 
-    // Função Central de Atualização de Interface
     function refreshUI() {
       if (!currentUser) return;
 
@@ -333,7 +332,6 @@
       const mainContent = document.getElementById('main-content');
       const controlsBar = document.getElementById('controls-bar');
 
-      // Garantir o flag approved para contas existentes
       Object.keys(appData.athletes).forEach(name => {
         if (appData.athletes[name].approved === undefined) {
           appData.athletes[name].approved = true;
@@ -342,7 +340,6 @@
 
       const currentAthleteData = appData.athletes[userName];
 
-      // Se for usuário comum E não estiver aprovado
       if (!isMasterUser && currentAthleteData && !currentAthleteData.approved) {
         loggedOutCard.classList.add('hidden');
         pendingCard.classList.remove('hidden');
@@ -352,7 +349,6 @@
         return;
       }
 
-      // Se aprovado ou master
       loggedOutCard.classList.add('hidden');
       pendingCard.classList.add('hidden');
       mainContent.classList.remove('hidden');
@@ -391,19 +387,13 @@
       const list = document.getElementById('pending-list');
       list.innerHTML = '';
 
-      if (!isMasterUser) {
-        box.classList.add('hidden');
-        return;
-      }
+      if (!isMasterUser) return box.classList.add('hidden');
 
       const pendingUsers = Object.keys(appData.athletes).filter(
         name => appData.athletes[name].approved === false
       );
 
-      if (pendingUsers.length === 0) {
-        box.classList.add('hidden');
-        return;
-      }
+      if (pendingUsers.length === 0) return box.classList.add('hidden');
 
       box.classList.remove('hidden');
 
@@ -425,7 +415,7 @@
       if (!isMasterUser) return;
       if (appData.athletes[userName]) {
         appData.athletes[userName].approved = true;
-        saveData();
+        saveData(userName); // Salva de forma isolada (Não subscreve os outros)
         refreshUI();
         alert(`✅ Perfil de "${userName}" aprovado com sucesso!`);
       }
@@ -435,14 +425,15 @@
       if (!isMasterUser) return;
       if (confirm(`Deseja recusar e excluir o cadastro de "${userName}"?`)) {
         delete appData.athletes[userName];
-        saveData();
+        localStorage.setItem('treino_data', JSON.stringify(appData));
+        if (isCloudEnabled) db.ref(`meu_treino_app/athletes/${userName}`).remove();
         refreshUI();
         alert(`🗑️ Perfil de "${userName}" excluído.`);
       }
     };
 
     // ==========================================
-    // 2. DADOS DO APLICATIVO E MULTI-ATLETA
+    // 2. DADOS DO APLICATIVO (SALVAMENTO GRANULAR)
     // ==========================================
     const levels = ["Iniciante", "Básico", "Básico II", "Intermediário", "Avançado", "Avançado II"];
     const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -457,30 +448,12 @@
     let currentFilter = 'ALL'; 
 
     const exercisesList = [
-      {
-        category: "Abdômen", color: "border-sky-500 bg-sky-50 text-sky-900", inputHighlight: "bg-sky-100 border-2 border-sky-500 text-sky-900 shadow-inner",
-        items: ["Carrinho", "Supra chão", "Banco com peso (lat. / front.)", "Infra corda", "Oblíquo Calcanhar", "Prancha Lateral", "Oblíquo lateral (banco)", "Ponte", "Crunch na bola suíça", "Abdominal cruzado", "Infra Canivete", "Infra Banco", "Bicicleta", "Supra Encolhimento", "Prancha Alta"]
-      },
-      {
-        category: "Membros Inferiores (Pernas)", color: "border-amber-500 bg-amber-50 text-amber-900", inputHighlight: "bg-amber-100 border-2 border-amber-500 text-amber-900 shadow-inner",
-        items: ["Extensão", "Agachamento sumô com halteres", "Agachamento parede com bola", "Afundo", "Gluteo Cross", "Gluteo agachamento com elastico", "Adução com Elastico", "Posterior com bola", "Gêmeos Maquina", "Leg Horizontal", "Leg 45º (Sumo)", "Glúteo Máquina", "Flexor Vertical (maq.)", "Panturrilha", "Stiff Barra", "Agachamento parede", "Tibial Barrinha", "Posterior (Pulley)"]
-      },
-      {
-        category: "Peitorais", color: "border-blue-500 bg-blue-50 text-blue-900", inputHighlight: "bg-blue-100 border-2 border-blue-500 text-blue-900 shadow-inner",
-        items: ["Supino Declinado", "Cross Over", "Fly Declinado", "Flexão de Braço", "Crucifixo Reto", "Crucifixo Inclinado", "Supino Reto", "Supino Inclinado", "Peck-Deck", "Fly Reto", "Fly Inclinado", "Abdomen Infra", "Abdomen Infra Corda"]
-      },
-      {
-        category: "Dorsais (Costas)", color: "border-indigo-500 bg-indigo-50 text-indigo-900", inputHighlight: "bg-indigo-100 border-2 border-indigo-500 text-indigo-900 shadow-inner",
-        items: ["Pulley Costas", "Pulley Frente", "Remada Articulada", "Remada Baixa", "Pullover", "Remada baixa aberta", "Pulldown", "Remada Uni Lateral", "Remada Cavalinho", "Barra Livre", "Barra Smith", "Peck Dorsal", "Remada Aberta"]
-      },
-      {
-        category: "Braços (Tríceps, Bíceps, Antebraço)", color: "border-emerald-500 bg-emerald-50 text-emerald-900", inputHighlight: "bg-emerald-100 border-2 border-emerald-500 text-emerald-900 shadow-inner",
-        items: ["Tríceps Testa", "Tríceps Francês Unilateral c/ halteres", "Tríceps Pulley", "Tríceps Corda", "Tríceps Banco", "Tríceps Coice Unil. Cross", "Tríceps Supinado com Halter", "Tríceps Paralela", "Bíceps Rosca com Martelo", "Bíceps Rosca Direta", "Bíceps Rosca Concentrada", "Bíceps Rosca Alternada", "Bíceps Rosca invertida", "Bíceps Rosca 90º Cross", "Bíceps Rosca Scott", "Bíceps Cross Alto", "Antebraço Rosca Inversa c/ barra", "Antebraço Rosca Punho", "Antebraço Rosca Punho Inversa"]
-      },
-      {
-        category: "Ombros & Trapézio", color: "border-yellow-500 bg-yellow-50 text-yellow-900", inputHighlight: "bg-yellow-100 border-2 border-yellow-500 text-yellow-900 shadow-inner",
-        items: ["Elevação Lateral", "Elevação Frontal", "Desenvolvimento", "Desenvolvimento Frontal", "Desenvolvimento Dorsal", "Arnold", "Manguito Rotacional", "Push Press", "Manguito Interno Halter", "Crucifixo Invertido Halter", "Remada Alta (Trapézio)", "Encolhimento com Barra (Trapézio)"]
-      }
+      { category: "Abdômen", color: "border-sky-500 bg-sky-50 text-sky-900", inputHighlight: "bg-sky-100 border-2 border-sky-500 text-sky-900 shadow-inner", items: ["Carrinho", "Supra chão", "Banco com peso (lat. / front.)", "Infra corda", "Oblíquo Calcanhar", "Prancha Lateral", "Oblíquo lateral (banco)", "Ponte", "Crunch na bola suíça", "Abdominal cruzado", "Infra Canivete", "Infra Banco", "Bicicleta", "Supra Encolhimento", "Prancha Alta"] },
+      { category: "Membros Inferiores (Pernas)", color: "border-amber-500 bg-amber-50 text-amber-900", inputHighlight: "bg-amber-100 border-2 border-amber-500 text-amber-900 shadow-inner", items: ["Extensão", "Agachamento sumô com halteres", "Agachamento parede com bola", "Afundo", "Gluteo Cross", "Gluteo agachamento com elastico", "Adução com Elastico", "Posterior com bola", "Gêmeos Maquina", "Leg Horizontal", "Leg 45º (Sumo)", "Glúteo Máquina", "Flexor Vertical (maq.)", "Panturrilha", "Stiff Barra", "Agachamento parede", "Tibial Barrinha", "Posterior (Pulley)"] },
+      { category: "Peitorais", color: "border-blue-500 bg-blue-50 text-blue-900", inputHighlight: "bg-blue-100 border-2 border-blue-500 text-blue-900 shadow-inner", items: ["Supino Declinado", "Cross Over", "Fly Declinado", "Flexão de Braço", "Crucifixo Reto", "Crucifixo Inclinado", "Supino Reto", "Supino Inclinado", "Peck-Deck", "Fly Reto", "Fly Inclinado", "Abdomen Infra", "Abdomen Infra Corda"] },
+      { category: "Dorsais (Costas)", color: "border-indigo-500 bg-indigo-50 text-indigo-900", inputHighlight: "bg-indigo-100 border-2 border-indigo-500 text-indigo-900 shadow-inner", items: ["Pulley Costas", "Pulley Frente", "Remada Articulada", "Remada Baixa", "Pullover", "Remada baixa aberta", "Pulldown", "Remada Uni Lateral", "Remada Cavalinho", "Barra Livre", "Barra Smith", "Peck Dorsal", "Remada Aberta"] },
+      { category: "Braços (Tríceps, Bíceps, Antebraço)", color: "border-emerald-500 bg-emerald-50 text-emerald-900", inputHighlight: "bg-emerald-100 border-2 border-emerald-500 text-emerald-900 shadow-inner", items: ["Tríceps Testa", "Tríceps Francês Unilateral c/ halteres", "Tríceps Pulley", "Tríceps Corda", "Tríceps Banco", "Tríceps Coice Unil. Cross", "Tríceps Supinado com Halter", "Tríceps Paralela", "Bíceps Rosca com Martelo", "Bíceps Rosca Direta", "Bíceps Rosca Concentrada", "Bíceps Rosca Alternada", "Bíceps Rosca invertida", "Bíceps Rosca 90º Cross", "Bíceps Rosca Scott", "Bíceps Cross Alto", "Antebraço Rosca Inversa c/ barra", "Antebraço Rosca Punho", "Antebraço Rosca Punho Inversa"] },
+      { category: "Ombros & Trapézio", color: "border-yellow-500 bg-yellow-50 text-yellow-900", inputHighlight: "bg-yellow-100 border-2 border-yellow-500 text-yellow-900 shadow-inner", items: ["Elevação Lateral", "Elevação Frontal", "Desenvolvimento", "Desenvolvimento Frontal", "Desenvolvimento Dorsal", "Arnold", "Manguito Rotacional", "Push Press", "Manguito Interno Halter", "Crucifixo Invertido Halter", "Remada Alta (Trapézio)", "Encolhimento com Barra (Trapézio)"] }
     ];
 
     function canEditCurrentAthlete() {
@@ -490,39 +463,33 @@
       return appData.currentAthlete === userName;
     }
 
-    // ==========================================
-    // 3. FUNÇÕES DE SUPORTE E SALVAR
-    // ==========================================
-    function saveData() {
+    // ⭐ NOVA FUNÇÃO DE SALVAMENTO BLINDADA ⭐
+    // Agora o sistema salva EXCLUSIVAMENTE o perfil passado na função, evitando sobrepor todos.
+    function saveData(specificAthlete = null) {
       localStorage.setItem('treino_data', JSON.stringify(appData));
       if (isCloudEnabled && isCloudLoaded) {
-        db.ref('meu_treino_app').set(appData);
+        const athleteToSave = specificAthlete || appData.currentAthlete;
+        if (athleteToSave && appData.athletes[athleteToSave]) {
+          // Salva apenas o nó do atleta específico na nuvem
+          db.ref(`meu_treino_app/athletes/${athleteToSave}`).set(appData.athletes[athleteToSave]);
+        }
       }
     }
 
-    // Sincronização e Mesclagem Inteligente de Dados
     function loadCloudData() {
       if (isCloudEnabled) {
         db.ref('meu_treino_app').on('value', (snapshot) => {
           const cloudData = snapshot.val();
           
-          let localData = JSON.parse(localStorage.getItem('treino_data')) || {};
-          let localAthletes = localData.athletes || {};
-
           if (cloudData && cloudData.athletes) {
-            // Mescla os dados locais e da nuvem para não perder perfis antigos
-            appData.athletes = { ...localAthletes, ...cloudData.athletes };
-          } else if (Object.keys(localAthletes).length > 0) {
-            appData.athletes = localAthletes;
+            appData.athletes = cloudData.athletes;
           }
 
           isCloudLoaded = true;
           initYearSelector();
           initExerciseMonthSelector();
 
-          if (currentUser) {
-            refreshUI();
-          }
+          if (currentUser) refreshUI();
         });
       } else {
         isCloudLoaded = true;
@@ -568,16 +535,13 @@
       document.getElementById('bio-height').value = bio.height || "";
       document.getElementById('bio-weight').value = bio.weight || "";
 
-      // Cálculo de idade
       const ageSpan = document.getElementById('bio-age');
       if (bio.dob) {
         const today = new Date();
         const birthDate = new Date(bio.dob);
         let age = today.getFullYear() - birthDate.getFullYear();
         const m = today.getMonth() - birthDate.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-          age--;
-        }
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
         ageSpan.innerText = `(${age} anos)`;
       } else {
         ageSpan.innerText = "";
@@ -656,7 +620,7 @@
           monthlyExercises: {}
         };
         appData.currentAthlete = name;
-        saveData();
+        saveData(name); // Salva o novo perfil de forma isolada
         initAthleteSelector();
         renderAll();
         alert(`✅ Perfil ${name} criado com sucesso!`);
@@ -674,7 +638,10 @@
       if (confirm(`Tem certeza que deseja excluir permanentemente o perfil "${current}"?`)) {
         delete appData.athletes[current];
         appData.currentAthlete = Object.keys(appData.athletes)[0];
-        saveData();
+        
+        localStorage.setItem('treino_data', JSON.stringify(appData));
+        if (isCloudEnabled) db.ref(`meu_treino_app/athletes/${current}`).remove();
+        
         initAthleteSelector();
         renderAll();
         alert(`🗑️ Perfil "${current}" excluído com sucesso.`);
