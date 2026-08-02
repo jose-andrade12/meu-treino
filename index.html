@@ -262,13 +262,6 @@
       auth = firebase.auth();
       isCloudEnabled = true;
       updateCloudStatus(true);
-      
-      // Captura erros de login via redirecionamento no celular
-      auth.getRedirectResult().catch((error) => {
-        console.error("Erro no redirecionamento:", error);
-        alert("Falha ao entrar com Google: " + error.message);
-      });
-      
     } catch (e) {
       console.log("Erro no Firebase.", e);
       updateCloudStatus(false);
@@ -305,6 +298,7 @@
           document.getElementById('auth-btn-text').innerText = `Sair (${userName})`;
           document.getElementById('auth-btn').className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-green-800 hover:bg-green-200 text-xs font-bold border border-green-300 transition-all shadow-sm cursor-pointer";
 
+          // Cria perfil SE não existir, e salva SOMENTE ESSE PERFIL (Granular Save)
           if (!appData.athletes[userName]) {
             appData.athletes[userName] = {
               email: userEmail,
@@ -336,12 +330,12 @@
       });
     }
 
+    // 🚀 RETORNADO PARA O MÉTODO POPUP QUE FUNCIONAVA!
     window.handleGoogleAuth = function() {
       if (!currentUser) {
         const provider = new firebase.auth.GoogleAuthProvider();
-        // 🚀 Alterado para Redirect (Evita bloqueio de popup no Celular e PWA)
-        auth.signInWithRedirect(provider).catch((error) => {
-          alert("Erro ao realizar login: " + error.message);
+        auth.signInWithPopup(provider).catch((error) => {
+          alert("Erro ao realizar login com o Google: " + error.message);
           console.error(error);
         });
       } else {
