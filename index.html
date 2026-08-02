@@ -192,15 +192,21 @@
       <section>
         <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
           
-          <!-- Título e Seletor de Mês -->
+          <!-- Título, Seletor de Mês e Botão de Copiar Mês Anterior -->
           <div class="flex flex-col sm:flex-row sm:items-center gap-3 w-full xl:w-auto">
             <h2 class="text-lg sm:text-xl font-bold text-slate-800 whitespace-nowrap">
               📋 Ficha de Exercícios: <span id="exercise-athlete-name" class="text-blue-600">Atleta</span>
             </h2>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 w-full sm:w-auto">
               <span class="text-xs font-bold text-slate-500 uppercase hidden sm:block">Mês:</span>
-              <select id="exercise-month-selector" class="border border-blue-300 rounded p-1.5 font-bold text-blue-800 bg-blue-50 cursor-pointer text-sm w-full sm:w-auto" onchange="changeExerciseMonth()">
+              <select id="exercise-month-selector" class="border border-blue-300 rounded p-1.5 font-bold text-blue-800 bg-blue-50 cursor-pointer text-sm flex-1 sm:flex-none" onchange="changeExerciseMonth()">
               </select>
+              
+              <!-- NOVO BOTÃO: COPIAR MÊS ANTERIOR -->
+              <button onclick="copyPreviousMonth()" id="btn-copy-month" class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 text-xs font-bold rounded-md shadow-sm transition-all cursor-pointer whitespace-nowrap" title="Copiar treinos do mês anterior">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
+                <span class="hidden sm:inline">Copiar Mês Anterior</span>
+              </button>
             </div>
           </div>
           
@@ -248,7 +254,7 @@
     };
 
     // 🔴 INSIRA SEU E-MAIL MASTER REAL DO GOOGLE AQUI:
-    const MASTER_EMAIL = "rss.andrade@gmail.com";
+    const MASTER_EMAIL = "seu-email-master@gmail.com";
 
     let db, auth;
     let isCloudEnabled = false;
@@ -281,7 +287,6 @@
       }
     }
 
-    // Monitora o Login do Google
     if (auth) {
       auth.onAuthStateChanged((user) => {
         currentUser = user;
@@ -298,7 +303,6 @@
           document.getElementById('auth-btn-text').innerText = `Sair (${userName})`;
           document.getElementById('auth-btn').className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-green-800 hover:bg-green-200 text-xs font-bold border border-green-300 transition-all shadow-sm cursor-pointer";
 
-          // Cria perfil SE não existir, e salva SOMENTE ESSE PERFIL (Granular Save)
           if (!appData.athletes[userName]) {
             appData.athletes[userName] = {
               email: userEmail,
@@ -330,7 +334,6 @@
       });
     }
 
-    // 🚀 RETORNADO PARA O MÉTODO POPUP QUE FUNCIONAVA!
     window.handleGoogleAuth = function() {
       if (!currentUser) {
         const provider = new firebase.auth.GoogleAuthProvider();
@@ -446,7 +449,7 @@
     };
 
     // ==========================================
-    // 2. DADOS DO APLICATIVO (SALVAMENTO GRANULAR)
+    // 2. DADOS DO APLICATIVO E CÓPIA DE MÊS
     // ==========================================
     const levels = ["Iniciante", "Básico", "Básico II", "Intermediário", "Avançado", "Avançado II"];
     const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -490,16 +493,21 @@
       if (isCloudEnabled) {
         db.ref('meu_treino_app').on('value', (snapshot) => {
           const cloudData = snapshot.val();
-          
           if (cloudData && cloudData.athletes) {
             appData.athletes = cloudData.athletes;
           }
-
           isCloudLoaded = true;
           initYearSelector();
           initExerciseMonthSelector();
 
-          if (currentUser) refreshUI();
+          if (currentUser) {
+            // Se o usuário estiver focado num input (digitando), ignora o recarregamento total da tela para não bugar.
+            const activeTag = document.activeElement ? document.activeElement.tagName : '';
+            if (activeTag === 'INPUT' || activeTag === 'SELECT') {
+              return; 
+            }
+            refreshUI();
+          }
         });
       } else {
         isCloudLoaded = true;
@@ -507,6 +515,47 @@
         initExerciseMonthSelector();
       }
     }
+
+    // Função de Copiar Mês Anterior
+    window.copyPreviousMonth = function() {
+      if (!canEditCurrentAthlete()) return;
+      
+      let prevMonth = currentExerciseMonth - 1;
+      let prevYear = currentYear;
+      
+      // Se for Janeiro (índice 0), volta pro Dezembro do ano passado
+      if (prevMonth < 0) {
+        prevMonth = 11;
+        prevYear--;
+      }
+
+      const currentAthleteData = appData.athletes[appData.currentAthlete];
+      const prevMonthKey = `${prevYear}-${prevMonth}`;
+      const currMonthKey = `${currentYear}-${currentExerciseMonth}`;
+
+      // Verifica se o mês anterior tem dados
+      let hasData = false;
+      if (currentAthleteData.monthlyExercises && currentAthleteData.monthlyExercises[prevMonthKey]) {
+        if (Object.keys(currentAthleteData.monthlyExercises[prevMonthKey]).length > 0) hasData = true;
+      }
+
+      if (!hasData) {
+        alert(`Nenhum treino preenchido foi encontrado em ${months[prevMonth]}/${prevYear} para poder copiar.`);
+        return;
+      }
+
+      const msg = `Deseja copiar todos os treinos de ${months[prevMonth]}/${prevYear} para ${months[currentExerciseMonth]}/${currentYear}?\n\n⚠️ Atenção: Isso irá apagar e substituir o que estiver preenchido no mês atual.`;
+      if (confirm(msg)) {
+        if (!currentAthleteData.monthlyExercises) currentAthleteData.monthlyExercises = {};
+        
+        // Copia os dados
+        currentAthleteData.monthlyExercises[currMonthKey] = JSON.parse(JSON.stringify(currentAthleteData.monthlyExercises[prevMonthKey]));
+        
+        saveData();
+        renderExercises();
+        alert("✅ Mês copiado com sucesso!");
+      }
+    };
 
     function renderAll() {
       const approvedKeys = Object.keys(appData.athletes).filter(
@@ -537,6 +586,11 @@
       } else {
         emailBadge.classList.add('hidden');
         emailBadge.classList.remove('flex');
+      }
+
+      const copyBtn = document.getElementById('btn-copy-month');
+      if (copyBtn) {
+        copyBtn.style.display = canEditCurrentAthlete() ? '' : 'none';
       }
 
       renderBio();
@@ -812,6 +866,9 @@
       return 'bg-white hover:bg-slate-50';
     }
 
+    // Temporizador para segurar o salvamento no firebase e não recarregar a tela
+    let exerciseTypingTimer;
+
     window.handleExerciseInput = function(exName, field, inputElement, highlightClass) {
       if (!canEditCurrentAthlete()) return;
       
@@ -825,14 +882,26 @@
       
       const value = inputElement.value;
       currentAthleteData.monthlyExercises[monthKey][exName][field] = value;
-      saveData();
+      
+      // Salva no armazenamento local (computador/celular) IMEDIATAMENTE para segurança
+      localStorage.setItem('treino_data', JSON.stringify(appData));
 
+      // Atualiza a cor visualmente de forma instantânea
       const baseClasses = "w-full text-center text-xs font-bold rounded p-1 outline-none transition-colors duration-300";
       if (value.trim() !== "") {
         inputElement.className = `${baseClasses} ${highlightClass} uppercase`;
       } else {
         inputElement.className = `${baseClasses} bg-white border border-slate-300 text-slate-700 uppercase`;
       }
+
+      // Salva na Nuvem (Firebase) só após parar de digitar por 1 segundo, 
+      // evitando que o teclado suma e a tela fique pulando.
+      clearTimeout(exerciseTypingTimer);
+      exerciseTypingTimer = setTimeout(() => {
+        if (isCloudEnabled && isCloudLoaded) {
+          db.ref(`meu_treino_app/athletes/${appData.currentAthlete}`).set(appData.athletes[appData.currentAthlete]);
+        }
+      }, 1000);
     };
 
     function renderExercises() {
