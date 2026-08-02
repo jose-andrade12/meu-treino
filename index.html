@@ -202,7 +202,7 @@
               <select id="exercise-month-selector" class="border border-blue-300 rounded p-1.5 font-bold text-blue-800 bg-blue-50 cursor-pointer text-sm flex-1 sm:flex-none" onchange="changeExerciseMonth()">
               </select>
               
-              <!-- NOVO BOTÃO: COPIAR MÊS ANTERIOR -->
+              <!-- BOTÃO: COPIAR MÊS ANTERIOR -->
               <button onclick="copyPreviousMonth()" id="btn-copy-month" class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 text-xs font-bold rounded-md shadow-sm transition-all cursor-pointer whitespace-nowrap" title="Copiar treinos do mês anterior">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
                 <span class="hidden sm:inline">Copiar Mês Anterior</span>
@@ -210,7 +210,7 @@
             </div>
           </div>
           
-          <!-- FILTROS E BOTÃO WHATSAPP -->
+          <!-- APENAS FILTROS AQUI EM CIMA -->
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
             <div class="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-lg border border-slate-200 overflow-x-auto scrollbar-hide w-full sm:w-auto">
               <span class="text-[10px] sm:text-xs font-bold text-slate-500 ml-2 uppercase tracking-wider whitespace-nowrap">Filtrar:</span>
@@ -220,19 +220,21 @@
               <button onclick="applyFilter('C')" id="btn-filter-C" class="filter-btn px-3 py-1.5 text-xs font-bold rounded-md bg-white text-slate-500 hover:bg-slate-200 transition-all whitespace-nowrap cursor-pointer">Treino C</button>
               <button onclick="applyFilter('PREFILLED')" id="btn-filter-PREFILLED" class="filter-btn px-3 py-1.5 text-xs font-bold rounded-md bg-white text-slate-500 hover:bg-slate-200 transition-all whitespace-nowrap cursor-pointer">Preenchidos</button>
             </div>
-            
-            <button onclick="shareWhatsApp()" class="flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold rounded-lg bg-green-500 hover:bg-green-600 text-white shadow-sm transition-all whitespace-nowrap cursor-pointer">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
-              </svg>
-              <span class="hidden sm:inline">Compartilhar Treino</span>
-              <span class="sm:hidden">Compartilhar</span>
-            </button>
           </div>
         </div>
 
         <!-- Container das Tabelas de Exercícios -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="categories-container"></div>
+        
+        <!-- BOTÃO WHATSAPP MOVIDO PARA O FINAL -->
+        <div class="mt-8 flex justify-center sm:justify-end">
+          <button onclick="shareWhatsApp()" class="flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-xl bg-green-500 hover:bg-green-600 text-white shadow-md transition-all whitespace-nowrap cursor-pointer w-full sm:w-auto">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
+            </svg>
+            <span class="inline">Compartilhar Treino no WhatsApp</span>
+          </button>
+        </div>
       </section>
 
     </div>
@@ -254,7 +256,7 @@
     };
 
     // 🔴 INSIRA SEU E-MAIL MASTER REAL DO GOOGLE AQUI:
-    const MASTER_EMAIL = "seu-email-master@gmail.com";
+    const MASTER_EMAIL = "rss.andrade@gmail.com";
 
     let db, auth;
     let isCloudEnabled = false;
@@ -501,7 +503,6 @@
           initExerciseMonthSelector();
 
           if (currentUser) {
-            // Se o usuário estiver focado num input (digitando), ignora o recarregamento total da tela para não bugar.
             const activeTag = document.activeElement ? document.activeElement.tagName : '';
             if (activeTag === 'INPUT' || activeTag === 'SELECT') {
               return; 
@@ -523,7 +524,6 @@
       let prevMonth = currentExerciseMonth - 1;
       let prevYear = currentYear;
       
-      // Se for Janeiro (índice 0), volta pro Dezembro do ano passado
       if (prevMonth < 0) {
         prevMonth = 11;
         prevYear--;
@@ -533,7 +533,6 @@
       const prevMonthKey = `${prevYear}-${prevMonth}`;
       const currMonthKey = `${currentYear}-${currentExerciseMonth}`;
 
-      // Verifica se o mês anterior tem dados
       let hasData = false;
       if (currentAthleteData.monthlyExercises && currentAthleteData.monthlyExercises[prevMonthKey]) {
         if (Object.keys(currentAthleteData.monthlyExercises[prevMonthKey]).length > 0) hasData = true;
@@ -548,7 +547,6 @@
       if (confirm(msg)) {
         if (!currentAthleteData.monthlyExercises) currentAthleteData.monthlyExercises = {};
         
-        // Copia os dados
         currentAthleteData.monthlyExercises[currMonthKey] = JSON.parse(JSON.stringify(currentAthleteData.monthlyExercises[prevMonthKey]));
         
         saveData();
@@ -866,7 +864,6 @@
       return 'bg-white hover:bg-slate-50';
     }
 
-    // Temporizador para segurar o salvamento no firebase e não recarregar a tela
     let exerciseTypingTimer;
 
     window.handleExerciseInput = function(exName, field, inputElement, highlightClass) {
@@ -883,10 +880,8 @@
       const value = inputElement.value;
       currentAthleteData.monthlyExercises[monthKey][exName][field] = value;
       
-      // Salva no armazenamento local (computador/celular) IMEDIATAMENTE para segurança
       localStorage.setItem('treino_data', JSON.stringify(appData));
 
-      // Atualiza a cor visualmente de forma instantânea
       const baseClasses = "w-full text-center text-xs font-bold rounded p-1 outline-none transition-colors duration-300";
       if (value.trim() !== "") {
         inputElement.className = `${baseClasses} ${highlightClass} uppercase`;
@@ -894,8 +889,6 @@
         inputElement.className = `${baseClasses} bg-white border border-slate-300 text-slate-700 uppercase`;
       }
 
-      // Salva na Nuvem (Firebase) só após parar de digitar por 1 segundo, 
-      // evitando que o teclado suma e a tela fique pulando.
       clearTimeout(exerciseTypingTimer);
       exerciseTypingTimer = setTimeout(() => {
         if (isCloudEnabled && isCloudLoaded) {
