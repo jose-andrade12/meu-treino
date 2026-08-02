@@ -262,6 +262,13 @@
       auth = firebase.auth();
       isCloudEnabled = true;
       updateCloudStatus(true);
+      
+      // Captura erros de login via redirecionamento no celular
+      auth.getRedirectResult().catch((error) => {
+        console.error("Erro no redirecionamento:", error);
+        alert("Falha ao entrar com Google: " + error.message);
+      });
+      
     } catch (e) {
       console.log("Erro no Firebase.", e);
       updateCloudStatus(false);
@@ -298,10 +305,9 @@
           document.getElementById('auth-btn-text').innerText = `Sair (${userName})`;
           document.getElementById('auth-btn').className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-green-800 hover:bg-green-200 text-xs font-bold border border-green-300 transition-all shadow-sm cursor-pointer";
 
-          // Cria perfil SE não existir, e salva SOMENTE ESSE PERFIL (Granular Save)
           if (!appData.athletes[userName]) {
             appData.athletes[userName] = {
-              email: userEmail, // <-- Salva o e-mail aqui
+              email: userEmail,
               approved: isMasterUser ? true : false,
               level: "Iniciante",
               bio: { dob: "", gender: "", height: "", weight: "" },
@@ -310,7 +316,6 @@
             };
             saveData(userName);
           } else if (!appData.athletes[userName].email) {
-            // Se o perfil já existe (ex: recuperado) mas sem e-mail, atualiza agora!
             appData.athletes[userName].email = userEmail;
             saveData(userName);
           }
@@ -330,6 +335,21 @@
         }
       });
     }
+
+    window.handleGoogleAuth = function() {
+      if (!currentUser) {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        // 🚀 Alterado para Redirect (Evita bloqueio de popup no Celular e PWA)
+        auth.signInWithRedirect(provider).catch((error) => {
+          alert("Erro ao realizar login: " + error.message);
+          console.error(error);
+        });
+      } else {
+        auth.signOut().then(() => {
+          alert("Desconectado com sucesso.");
+        });
+      }
+    };
 
     function refreshUI() {
       if (!currentUser) return;
@@ -376,7 +396,6 @@
       renderAll();
     }
 
-    // LISTA DE PERFIS PENDENTES (COM E-MAIL AGORA)
     function renderMasterPendingList() {
       const box = document.getElementById('master-pending-box');
       const list = document.getElementById('pending-list');
@@ -415,7 +434,7 @@
       if (!isMasterUser) return;
       if (appData.athletes[userName]) {
         appData.athletes[userName].approved = true;
-        saveData(userName); // Salva de forma isolada (Não subscreve os outros)
+        saveData(userName);
         refreshUI();
         alert(`✅ Perfil de "${userName}" aprovado com sucesso!`);
       }
@@ -516,7 +535,6 @@
       document.getElementById('calendar-athlete-name').innerText = appData.currentAthlete;
       document.getElementById('exercise-athlete-name').innerText = appData.currentAthlete;
 
-      // EXIBIÇÃO DO E-MAIL DO PERFIL SELECIONADO
       const emailBadge = document.getElementById('current-athlete-email');
       if (currentAthleteData.email && currentAthleteData.email !== "") {
         emailBadge.innerText = `✉️ ${currentAthleteData.email}`;
@@ -621,7 +639,7 @@
           return;
         }
         appData.athletes[name] = {
-          email: "", // Fica vazio para quem for adicionado sem o Google
+          email: "",
           approved: true,
           level: "Iniciante",
           bio: { dob: "", gender: "", height: "", weight: "" },
@@ -629,7 +647,7 @@
           monthlyExercises: {}
         };
         appData.currentAthlete = name;
-        saveData(name); // Salva o novo perfil de forma isolada
+        saveData(name);
         initAthleteSelector();
         renderAll();
         alert(`✅ Perfil ${name} criado com sucesso!`);
@@ -657,9 +675,6 @@
       }
     };
 
-    // ==========================================
-    // 4. LÓGICA DE INTERFACE E FILTROS
-    // ==========================================
     function initYearSelector() {
       const select = document.getElementById('year-selector');
       select.innerHTML = '';
@@ -923,9 +938,6 @@
       });
     }
 
-    // ==========================================
-    // 5. FUNÇÃO WHATSAPP
-    // ==========================================
     window.shareWhatsApp = function() {
       const currentAthleteData = appData.athletes[appData.currentAthlete];
       if (!currentAthleteData) return;
