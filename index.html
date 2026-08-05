@@ -210,7 +210,7 @@
             </div>
           </div>
           
-          <!-- APENAS FILTROS AQUI EM CIMA -->
+          <!-- FILTROS -->
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
             <div class="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-lg border border-slate-200 overflow-x-auto scrollbar-hide w-full sm:w-auto">
               <span class="text-[10px] sm:text-xs font-bold text-slate-500 ml-2 uppercase tracking-wider whitespace-nowrap">Filtrar:</span>
@@ -465,13 +465,14 @@
     let currentExerciseMonth = new Date().getMonth(); 
     let currentFilter = 'ALL'; 
 
+    // NOVO: Adicionado um ícone/imagem visual representando o grupo muscular para o botão do Youtube!
     const exercisesList = [
-      { category: "Abdômen", color: "border-sky-500 bg-sky-50 text-sky-900", inputHighlight: "bg-sky-100 border-2 border-sky-500 text-sky-900 shadow-inner", items: ["Carrinho", "Supra chão", "Banco com peso (lat. / front.)", "Infra corda", "Oblíquo Calcanhar", "Prancha Lateral", "Oblíquo lateral (banco)", "Ponte", "Crunch na bola suíça", "Abdominal cruzado", "Infra Canivete", "Infra Banco", "Bicicleta", "Supra Encolhimento", "Prancha Alta"] },
-      { category: "Membros Inferiores (Pernas)", color: "border-amber-500 bg-amber-50 text-amber-900", inputHighlight: "bg-amber-100 border-2 border-amber-500 text-amber-900 shadow-inner", items: ["Extensão", "Agachamento sumô com halteres", "Agachamento parede com bola", "Afundo", "Gluteo Cross", "Gluteo agachamento com elastico", "Adução com Elastico", "Posterior com bola", "Gêmeos Maquina", "Leg Horizontal", "Leg 45º (Sumo)", "Glúteo Máquina", "Flexor Vertical (maq.)", "Panturrilha", "Stiff Barra", "Agachamento parede", "Tibial Barrinha", "Posterior (Pulley)"] },
-      { category: "Peitorais", color: "border-blue-500 bg-blue-50 text-blue-900", inputHighlight: "bg-blue-100 border-2 border-blue-500 text-blue-900 shadow-inner", items: ["Supino Declinado", "Cross Over", "Fly Declinado", "Flexão de Braço", "Crucifixo Reto", "Crucifixo Inclinado", "Supino Reto", "Supino Inclinado", "Peck-Deck", "Fly Reto", "Fly Inclinado", "Abdomen Infra", "Abdomen Infra Corda"] },
-      { category: "Dorsais (Costas)", color: "border-indigo-500 bg-indigo-50 text-indigo-900", inputHighlight: "bg-indigo-100 border-2 border-indigo-500 text-indigo-900 shadow-inner", items: ["Pulley Costas", "Pulley Frente", "Remada Articulada", "Remada Baixa", "Pullover", "Remada baixa aberta", "Pulldown", "Remada Uni Lateral", "Remada Cavalinho", "Barra Livre", "Barra Smith", "Peck Dorsal", "Remada Aberta"] },
-      { category: "Braços (Tríceps, Bíceps, Antebraço)", color: "border-emerald-500 bg-emerald-50 text-emerald-900", inputHighlight: "bg-emerald-100 border-2 border-emerald-500 text-emerald-900 shadow-inner", items: ["Tríceps Testa", "Tríceps Francês Unilateral c/ halteres", "Tríceps Pulley", "Tríceps Corda", "Tríceps Banco", "Tríceps Coice Unil. Cross", "Tríceps Supinado com Halter", "Tríceps Paralela", "Bíceps Rosca com Martelo", "Bíceps Rosca Direta", "Bíceps Rosca Concentrada", "Bíceps Rosca Alternada", "Bíceps Rosca invertida", "Bíceps Rosca 90º Cross", "Bíceps Rosca Scott", "Bíceps Cross Alto", "Antebraço Rosca Inversa c/ barra", "Antebraço Rosca Punho", "Antebraço Rosca Punho Inversa"] },
-      { category: "Ombros & Trapézio", color: "border-yellow-500 bg-yellow-50 text-yellow-900", inputHighlight: "bg-yellow-100 border-2 border-yellow-500 text-yellow-900 shadow-inner", items: ["Elevação Lateral", "Elevação Frontal", "Desenvolvimento", "Desenvolvimento Frontal", "Desenvolvimento Dorsal", "Arnold", "Manguito Rotacional", "Push Press", "Manguito Interno Halter", "Crucifixo Invertido Halter", "Remada Alta (Trapézio)", "Encolhimento com Barra (Trapézio)"] }
+      { category: "Abdômen", color: "border-sky-500 bg-sky-50 text-sky-900", icon: "https://img.icons8.com/color/96/sit-ups.png", inputHighlight: "bg-sky-100 border-2 border-sky-500 text-sky-900 shadow-inner", items: ["Carrinho", "Supra chão", "Banco com peso (lat. / front.)", "Infra corda", "Oblíquo Calcanhar", "Prancha Lateral", "Oblíquo lateral (banco)", "Ponte", "Crunch na bola suíça", "Abdominal cruzado", "Infra Canivete", "Infra Banco", "Bicicleta", "Supra Encolhimento", "Prancha Alta"] },
+      { category: "Membros Inferiores (Pernas)", color: "border-amber-500 bg-amber-50 text-amber-900", icon: "https://img.icons8.com/color/96/squats.png", inputHighlight: "bg-amber-100 border-2 border-amber-500 text-amber-900 shadow-inner", items: ["Extensão", "Agachamento sumô com halteres", "Agachamento parede com bola", "Afundo", "Gluteo Cross", "Gluteo agachamento com elastico", "Adução com Elastico", "Posterior com bola", "Gêmeos Maquina", "Leg Horizontal", "Leg 45º (Sumo)", "Glúteo Máquina", "Flexor Vertical (maq.)", "Panturrilha", "Stiff Barra", "Agachamento parede", "Tibial Barrinha", "Posterior (Pulley)"] },
+      { category: "Peitorais", color: "border-blue-500 bg-blue-50 text-blue-900", icon: "https://img.icons8.com/color/96/pushups.png", inputHighlight: "bg-blue-100 border-2 border-blue-500 text-blue-900 shadow-inner", items: ["Supino Declinado", "Cross Over", "Fly Declinado", "Flexão de Braço", "Crucifixo Reto", "Crucifixo Inclinado", "Supino Reto", "Supino Inclinado", "Peck-Deck", "Fly Reto", "Fly Inclinado", "Abdomen Infra", "Abdomen Infra Corda"] },
+      { category: "Dorsais (Costas)", color: "border-indigo-500 bg-indigo-50 text-indigo-900", icon: "https://img.icons8.com/color/96/pullups.png", inputHighlight: "bg-indigo-100 border-2 border-indigo-500 text-indigo-900 shadow-inner", items: ["Pulley Costas", "Pulley Frente", "Remada Articulada", "Remada Baixa", "Pullover", "Remada baixa aberta", "Pulldown", "Remada Uni Lateral", "Remada Cavalinho", "Barra Livre", "Barra Smith", "Peck Dorsal", "Remada Aberta"] },
+      { category: "Braços (Tríceps, Bíceps, Antebraço)", color: "border-emerald-500 bg-emerald-50 text-emerald-900", icon: "https://img.icons8.com/color/96/flex-biceps.png", inputHighlight: "bg-emerald-100 border-2 border-emerald-500 text-emerald-900 shadow-inner", items: ["Tríceps Testa", "Tríceps Francês Unilateral c/ halteres", "Tríceps Pulley", "Tríceps Corda", "Tríceps Banco", "Tríceps Coice Unil. Cross", "Tríceps Supinado com Halter", "Tríceps Paralela", "Bíceps Rosca com Martelo", "Bíceps Rosca Direta", "Bíceps Rosca Concentrada", "Bíceps Rosca Alternada", "Bíceps Rosca invertida", "Bíceps Rosca 90º Cross", "Bíceps Rosca Scott", "Bíceps Cross Alto", "Antebraço Rosca Inversa c/ barra", "Antebraço Rosca Punho", "Antebraço Rosca Punho Inversa"] },
+      { category: "Ombros & Trapézio", color: "border-yellow-500 bg-yellow-50 text-yellow-900", icon: "https://img.icons8.com/color/96/deadlift.png", inputHighlight: "bg-yellow-100 border-2 border-yellow-500 text-yellow-900 shadow-inner", items: ["Elevação Lateral", "Elevação Frontal", "Desenvolvimento", "Desenvolvimento Frontal", "Desenvolvimento Dorsal", "Arnold", "Manguito Rotacional", "Push Press", "Manguito Interno Halter", "Crucifixo Invertido Halter", "Remada Alta (Trapézio)", "Encolhimento com Barra (Trapézio)"] }
     ];
 
     function canEditCurrentAthlete() {
@@ -882,7 +883,7 @@
       
       localStorage.setItem('treino_data', JSON.stringify(appData));
 
-      const baseClasses = "w-full text-center text-xs font-bold rounded p-1 outline-none transition-colors duration-300";
+      const baseClasses = "w-full text-center text-xs font-bold rounded outline-none transition-colors duration-300 h-8";
       if (value.trim() !== "") {
         inputElement.className = `${baseClasses} ${highlightClass} uppercase`;
       } else {
@@ -933,7 +934,7 @@
         const card = document.createElement('div');
         card.className = `bg-white rounded-xl shadow-md border overflow-hidden`;
         
-        const baseInputClass = "w-full text-center text-xs font-bold rounded p-1 outline-none transition-colors duration-300";
+        const baseInputClass = "w-full text-center text-xs font-bold rounded outline-none transition-colors duration-300 h-8";
         const emptyClass = "bg-white border border-slate-300 text-slate-700";
 
         let tableRows = filteredItems.map(exName => {
@@ -942,36 +943,38 @@
           const disabledAttr = !canEdit ? 'disabled' : '';
           const disabledStyle = !canEdit ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : '';
           
-          // Link Dinâmico para pesquisa do exercício no YouTube
+          // Link inteligente para buscar o exercício exato no YouTube
           const youtubeSearchUrl = `https://www.youtube.com/results?search_query=como+fazer+exercício+${encodeURIComponent(exName)}+musculação`;
 
           return `
           <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
-            <td class="p-1 sm:p-2 text-center w-12 sm:w-14">
+            <td class="p-2 text-center w-12 sm:w-16">
               <input type="text" ${disabledAttr} value="${exData.treino || ''}" oninput="handleExerciseInput('${exName}', 'treino', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.treino ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
-            <td class="p-1 sm:p-2 text-center w-10 sm:w-12">
+            <td class="p-2 text-center w-12 sm:w-16">
               <input type="text" ${disabledAttr} value="${exData.ordem || ''}" oninput="handleExerciseInput('${exName}', 'ordem', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.ordem ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
             
-            <td class="p-1 sm:p-2 flex items-center gap-2 sm:gap-3 relative">
-              <!-- BOTÃO HALTER COM LINK PARA YOUTUBE -->
+            <!-- ÁREA DA FOTO E NOME DO EXERCÍCIO (VISUAL DE APP) -->
+            <td class="p-3 flex items-center gap-3 relative min-w-[200px]">
               <a href="${youtubeSearchUrl}" target="_blank" title="Ver como fazer: ${exName} no YouTube" 
-                 class="w-8 h-8 sm:w-10 sm:h-10 bg-slate-50 hover:bg-red-50 hover:text-red-600 hover:border-red-300 hover:scale-105 rounded-md border border-slate-200 shadow-sm flex-shrink-0 flex items-center justify-center text-slate-400 transition-all cursor-pointer">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m14.4 14.4 5.6 5.6"/><path d="m20 16.4-.8-.8"/><path d="m16.4 20-.8-.8"/><path d="m10.1 10.1 3.8 3.8"/><path d="m12.4 7.6 4 4"/><path d="m7.6 12.4 4 4"/><path d="m4 4 5.6 5.6"/><path d="m7.6 4-.8.8"/><path d="m4 7.6-.8.8"/>
-                </svg>
+                 class="relative block w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 cursor-pointer overflow-hidden rounded-xl border-2 border-transparent hover:border-red-400 shadow-sm transition-all group/img">
+                <img src="${cat.icon}" alt="Ícone ${cat.category}" class="w-full h-full object-contain bg-white p-1 group-hover/img:brightness-75 transition-all">
+                <!-- Overlay de Play -->
+                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity duration-200 bg-black/20">
+                  <svg class="w-7 h-7 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </div>
               </a>
-              <span class="font-medium text-slate-700 text-[11px] sm:text-sm leading-tight">${exName}</span>
+              <span class="font-extrabold text-slate-800 text-[13px] sm:text-[15px] leading-tight tracking-tight">${exName}</span>
             </td>
 
-            <td class="p-1 sm:p-2 w-10 sm:w-12">
+            <td class="p-2 w-12 sm:w-16">
               <input type="text" ${disabledAttr} value="${exData.serie || ''}" oninput="handleExerciseInput('${exName}', 'serie', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.serie ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
-            <td class="p-1 sm:p-2 w-10 sm:w-12">
+            <td class="p-2 w-12 sm:w-16">
               <input type="text" ${disabledAttr} value="${exData.rep || ''}" oninput="handleExerciseInput('${exName}', 'rep', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.rep ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
-            <td class="p-1 sm:p-2 w-12 sm:w-14">
+            <td class="p-2 w-14 sm:w-20">
               <input type="text" ${disabledAttr} value="${exData.pausa || ''}" oninput="handleExerciseInput('${exName}', 'pausa', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.pausa ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
           </tr>
@@ -982,15 +985,15 @@
             <span>${cat.category}</span>
           </div>
           <div class="overflow-x-auto scrollbar-hide">
-            <table class="w-full text-left border-collapse min-w-[320px]">
+            <table class="w-full text-left border-collapse min-w-[400px]">
               <thead>
-                <tr class="bg-slate-50 text-[9px] sm:text-xs uppercase tracking-wider text-slate-400 border-b border-slate-200">
-                  <th class="p-1 sm:p-2 text-center font-semibold">Treino</th>
-                  <th class="p-1 sm:p-2 text-center font-semibold">Ord.</th>
-                  <th class="p-1 sm:p-2 font-semibold">Exercício</th>
-                  <th class="p-1 sm:p-2 text-center font-semibold">Sér.</th>
-                  <th class="p-1 sm:p-2 text-center font-semibold">Rep.</th>
-                  <th class="p-1 sm:p-2 text-center font-semibold">Pausa</th>
+                <tr class="bg-slate-50 text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 border-b border-slate-200">
+                  <th class="p-2 text-center font-semibold">Treino</th>
+                  <th class="p-2 text-center font-semibold">Ord.</th>
+                  <th class="p-3 font-semibold text-slate-500">Exercício <span class="lowercase font-normal text-[9px]">(Clique na foto para ver vídeo)</span></th>
+                  <th class="p-2 text-center font-semibold">Sér.</th>
+                  <th class="p-2 text-center font-semibold">Rep.</th>
+                  <th class="p-2 text-center font-semibold">Pausa</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 text-xs">${tableRows}</tbody>
