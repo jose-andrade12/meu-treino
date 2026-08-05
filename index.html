@@ -451,7 +451,7 @@
     };
 
     // ==========================================
-    // 2. DADOS DO APLICATIVO E CÓPIA DE MÊS
+    // 2. DADOS DO APLICATIVO E ÍCONES DINÂMICOS
     // ==========================================
     const levels = ["Iniciante", "Básico", "Básico II", "Intermediário", "Avançado", "Avançado II"];
     const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -465,7 +465,6 @@
     let currentExerciseMonth = new Date().getMonth(); 
     let currentFilter = 'ALL'; 
 
-    // NOVO: Adicionado um ícone/imagem visual representando o grupo muscular para o botão do Youtube!
     const exercisesList = [
       { category: "Abdômen", color: "border-sky-500 bg-sky-50 text-sky-900", icon: "https://img.icons8.com/color/96/sit-ups.png", inputHighlight: "bg-sky-100 border-2 border-sky-500 text-sky-900 shadow-inner", items: ["Carrinho", "Supra chão", "Banco com peso (lat. / front.)", "Infra corda", "Oblíquo Calcanhar", "Prancha Lateral", "Oblíquo lateral (banco)", "Ponte", "Crunch na bola suíça", "Abdominal cruzado", "Infra Canivete", "Infra Banco", "Bicicleta", "Supra Encolhimento", "Prancha Alta"] },
       { category: "Membros Inferiores (Pernas)", color: "border-amber-500 bg-amber-50 text-amber-900", icon: "https://img.icons8.com/color/96/squats.png", inputHighlight: "bg-amber-100 border-2 border-amber-500 text-amber-900 shadow-inner", items: ["Extensão", "Agachamento sumô com halteres", "Agachamento parede com bola", "Afundo", "Gluteo Cross", "Gluteo agachamento com elastico", "Adução com Elastico", "Posterior com bola", "Gêmeos Maquina", "Leg Horizontal", "Leg 45º (Sumo)", "Glúteo Máquina", "Flexor Vertical (maq.)", "Panturrilha", "Stiff Barra", "Agachamento parede", "Tibial Barrinha", "Posterior (Pulley)"] },
@@ -474,6 +473,27 @@
       { category: "Braços (Tríceps, Bíceps, Antebraço)", color: "border-emerald-500 bg-emerald-50 text-emerald-900", icon: "https://img.icons8.com/color/96/flex-biceps.png", inputHighlight: "bg-emerald-100 border-2 border-emerald-500 text-emerald-900 shadow-inner", items: ["Tríceps Testa", "Tríceps Francês Unilateral c/ halteres", "Tríceps Pulley", "Tríceps Corda", "Tríceps Banco", "Tríceps Coice Unil. Cross", "Tríceps Supinado com Halter", "Tríceps Paralela", "Bíceps Rosca com Martelo", "Bíceps Rosca Direta", "Bíceps Rosca Concentrada", "Bíceps Rosca Alternada", "Bíceps Rosca invertida", "Bíceps Rosca 90º Cross", "Bíceps Rosca Scott", "Bíceps Cross Alto", "Antebraço Rosca Inversa c/ barra", "Antebraço Rosca Punho", "Antebraço Rosca Punho Inversa"] },
       { category: "Ombros & Trapézio", color: "border-yellow-500 bg-yellow-50 text-yellow-900", icon: "https://img.icons8.com/color/96/deadlift.png", inputHighlight: "bg-yellow-100 border-2 border-yellow-500 text-yellow-900 shadow-inner", items: ["Elevação Lateral", "Elevação Frontal", "Desenvolvimento", "Desenvolvimento Frontal", "Desenvolvimento Dorsal", "Arnold", "Manguito Rotacional", "Push Press", "Manguito Interno Halter", "Crucifixo Invertido Halter", "Remada Alta (Trapézio)", "Encolhimento com Barra (Trapézio)"] }
     ];
+
+    // NOVA FUNÇÃO: Analisa o nome do exercício e retorna o ícone mais adequado
+    function getExerciseIcon(exName, defaultCatIcon) {
+      const n = exName.toLowerCase();
+      
+      if (n.includes('supino')) return 'https://img.icons8.com/color/96/bench-press-with-dumbbells.png';
+      if (n.includes('flexão') || n.includes('flexao') || n.includes('tríceps') || n.includes('triceps')) return 'https://img.icons8.com/color/96/pushups.png';
+      if (n.includes('prancha') || n.includes('ponte')) return 'https://img.icons8.com/color/96/plank.png';
+      if (n.includes('bicicleta')) return 'https://img.icons8.com/color/96/cycling.png';
+      if (n.includes('carrinho')) return 'https://img.icons8.com/color/96/treadmill.png';
+      if (n.includes('remada') || n.includes('cavalinho')) return 'https://img.icons8.com/color/96/rowing.png';
+      if (n.includes('stiff')) return 'https://img.icons8.com/color/96/deadlift.png';
+      if (n.includes('desenvolvimento') || n.includes('arnold') || n.includes('press')) return 'https://img.icons8.com/color/96/weightlifting.png';
+      if (n.includes('rosca') || n.includes('bíceps') || n.includes('biceps')) return 'https://img.icons8.com/color/96/flex-biceps.png';
+      if (n.includes('barra') || n.includes('pulley') || n.includes('pulldown')) return 'https://img.icons8.com/color/96/pullups.png';
+      if (n.includes('agachamento') || n.includes('afundo') || n.includes('leg')) return 'https://img.icons8.com/color/96/squats.png';
+      if (n.includes('elevação') || n.includes('crucifixo') || n.includes('fly') || n.includes('manguito') || n.includes('encolhimento') || n.includes('antebraço')) return 'https://img.icons8.com/color/96/dumbbell.png';
+
+      // Se não encontrar uma palavra-chave acima, usa o ícone genérico do grupo muscular
+      return defaultCatIcon;
+    }
 
     function canEditCurrentAthlete() {
       if (!currentUser) return false;
@@ -943,8 +963,10 @@
           const disabledAttr = !canEdit ? 'disabled' : '';
           const disabledStyle = !canEdit ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : '';
           
-          // Link inteligente para buscar o exercício exato no YouTube
           const youtubeSearchUrl = `https://www.youtube.com/results?search_query=como+fazer+exercício+${encodeURIComponent(exName)}+musculação`;
+          
+          // Usa a nossa inteligência para puxar o ícone certo (ou cai no padrão da categoria em caso de erro)
+          const specificIcon = getExerciseIcon(exName, cat.icon);
 
           return `
           <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
@@ -959,7 +981,10 @@
             <td class="p-3 flex items-center gap-3 relative min-w-[200px]">
               <a href="${youtubeSearchUrl}" target="_blank" title="Ver como fazer: ${exName} no YouTube" 
                  class="relative block w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 cursor-pointer overflow-hidden rounded-xl border-2 border-transparent hover:border-red-400 shadow-sm transition-all group/img">
-                <img src="${cat.icon}" alt="Ícone ${cat.category}" class="w-full h-full object-contain bg-white p-1 group-hover/img:brightness-75 transition-all">
+                
+                <!-- Imagem do exercício com onError para nunca quebrar -->
+                <img src="${specificIcon}" onerror="this.src='${cat.icon}'" alt="Ícone ${exName}" class="w-full h-full object-contain bg-white p-1 group-hover/img:brightness-75 transition-all">
+                
                 <!-- Overlay de Play -->
                 <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity duration-200 bg-black/20">
                   <svg class="w-7 h-7 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
