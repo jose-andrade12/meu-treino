@@ -226,7 +226,7 @@
         <!-- Container das Tabelas de Exercícios -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="categories-container"></div>
         
-        <!-- BOTÃO WHATSAPP MOVIDO PARA O FINAL -->
+        <!-- BOTÃO WHATSAPP -->
         <div class="mt-8 flex justify-center sm:justify-end">
           <button onclick="shareWhatsApp()" class="flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-xl bg-green-500 hover:bg-green-600 text-white shadow-md transition-all whitespace-nowrap cursor-pointer w-full sm:w-auto">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
@@ -238,7 +238,19 @@
       </section>
 
     </div>
+  </div>
 
+  <!-- MODAL DE GIFS (FICA ESCONDIDO ATÉ O CLIQUE) -->
+  <div id="gif-modal" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex-col items-center justify-center p-4 backdrop-blur-sm transition-all">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl relative transform scale-100 transition-all">
+      <button onclick="closeGifModal()" class="absolute -top-3 -right-3 w-10 h-10 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg border-2 border-white transition-transform hover:scale-110 cursor-pointer">X</button>
+      
+      <h3 id="modal-title" class="text-lg font-extrabold text-slate-800 mb-4 border-b pb-2">Nome do Exercício</h3>
+      
+      <div id="modal-content" class="min-h-[180px] flex items-center justify-center">
+        <!-- O GIF será injetado aqui via JavaScript -->
+      </div>
+    </div>
   </div>
 
   <script>
@@ -474,10 +486,8 @@
       { category: "Ombros & Trapézio", color: "border-yellow-500 bg-yellow-50 text-yellow-900", icon: "https://img.icons8.com/color/96/deadlift.png", inputHighlight: "bg-yellow-100 border-2 border-yellow-500 text-yellow-900 shadow-inner", items: ["Elevação Lateral", "Elevação Frontal", "Desenvolvimento", "Desenvolvimento Frontal", "Desenvolvimento Dorsal", "Arnold", "Manguito Rotacional", "Push Press", "Manguito Interno Halter", "Crucifixo Invertido Halter", "Remada Alta (Trapézio)", "Encolhimento com Barra (Trapézio)"] }
     ];
 
-    // NOVA FUNÇÃO: Analisa o nome do exercício e retorna o ícone mais adequado
     function getExerciseIcon(exName, defaultCatIcon) {
       const n = exName.toLowerCase();
-      
       if (n.includes('supino')) return 'https://img.icons8.com/color/96/bench-press-with-dumbbells.png';
       if (n.includes('flexão') || n.includes('flexao') || n.includes('tríceps') || n.includes('triceps')) return 'https://img.icons8.com/color/96/pushups.png';
       if (n.includes('prancha') || n.includes('ponte')) return 'https://img.icons8.com/color/96/plank.png';
@@ -490,10 +500,57 @@
       if (n.includes('barra') || n.includes('pulley') || n.includes('pulldown')) return 'https://img.icons8.com/color/96/pullups.png';
       if (n.includes('agachamento') || n.includes('afundo') || n.includes('leg')) return 'https://img.icons8.com/color/96/squats.png';
       if (n.includes('elevação') || n.includes('crucifixo') || n.includes('fly') || n.includes('manguito') || n.includes('encolhimento') || n.includes('antebraço')) return 'https://img.icons8.com/color/96/dumbbell.png';
-
-      // Se não encontrar uma palavra-chave acima, usa o ícone genérico do grupo muscular
       return defaultCatIcon;
     }
+
+    // ==========================================
+    // 3. DICIONÁRIO DE GIFS (HOSPEDAGEM DIRETA)
+    // ==========================================
+    // Cole aqui os links de GIFs (do Giphy, Tenor, Pinterest, ou seu próprio servidor)
+    // O nome escrito aqui DEVE ser idêntico ao nome do exercício na lista.
+    const gifDatabase = {
+      "Supino Reto": "https://media1.tenor.com/m/o6o0N204nYEAAAAC/barbell-bench-press.gif",
+      "Flexão de Braço": "https://media1.tenor.com/m/9ZikNtvn0kUAAAAd/push-up.gif",
+      "Agachamento sumô com halteres": "https://media1.tenor.com/m/dK5rE3_YwR0AAAAd/squat-squats.gif", // Exemplo generico de agachamento
+      "Prancha Alta": "https://media1.tenor.com/m/b_VOnx3B88AAAAC/plank.gif"
+    };
+
+    // CONTROLES DO MODAL (JANELA DE VÍDEO IN-APP)
+    window.openGifModal = function(exName) {
+      const modal = document.getElementById('gif-modal');
+      const title = document.getElementById('modal-title');
+      const content = document.getElementById('modal-content');
+      
+      title.innerText = exName;
+      
+      if (gifDatabase[exName]) {
+        // Se o GIF estiver cadastrado, mostra ele dentro do app
+        content.innerHTML = `<img src="${gifDatabase[exName]}" class="w-full h-auto rounded-lg shadow-md border border-slate-200">`;
+      } else {
+        // Se não tiver GIF, mostra mensagem de erro chique e dá a opção de YouTube
+        const youtubeSearchUrl = `https://www.youtube.com/results?search_query=como+fazer+exercício+${encodeURIComponent(exName)}+musculação`;
+        content.innerHTML = `
+          <div class="space-y-4 text-center">
+            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-3xl">📭</div>
+            <p class="text-sm text-slate-500">GIF ainda não cadastrado no sistema para este exercício.</p>
+            <a href="${youtubeSearchUrl}" target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-xl transition-all shadow-md">
+              <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+              Ver no YouTube
+            </a>
+          </div>
+        `;
+      }
+      
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    window.closeGifModal = function() {
+      const modal = document.getElementById('gif-modal');
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
+    }
+
 
     function canEditCurrentAthlete() {
       if (!currentUser) return false;
@@ -538,7 +595,6 @@
       }
     }
 
-    // Função de Copiar Mês Anterior
     window.copyPreviousMonth = function() {
       if (!canEditCurrentAthlete()) return;
       
@@ -963,9 +1019,6 @@
           const disabledAttr = !canEdit ? 'disabled' : '';
           const disabledStyle = !canEdit ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : '';
           
-          const youtubeSearchUrl = `https://www.youtube.com/results?search_query=como+fazer+exercício+${encodeURIComponent(exName)}+musculação`;
-          
-          // Usa a nossa inteligência para puxar o ícone certo (ou cai no padrão da categoria em caso de erro)
           const specificIcon = getExerciseIcon(exName, cat.icon);
 
           return `
@@ -977,19 +1030,17 @@
               <input type="text" ${disabledAttr} value="${exData.ordem || ''}" oninput="handleExerciseInput('${exName}', 'ordem', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.ordem ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
             
-            <!-- ÁREA DA FOTO E NOME DO EXERCÍCIO (VISUAL DE APP) -->
+            <!-- ÁREA DA FOTO E NOME DO EXERCÍCIO (VISUAL DE APP E MODAL) -->
             <td class="p-3 flex items-center gap-3 relative min-w-[200px]">
-              <a href="${youtubeSearchUrl}" target="_blank" title="Ver como fazer: ${exName} no YouTube" 
-                 class="relative block w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 cursor-pointer overflow-hidden rounded-xl border-2 border-transparent hover:border-red-400 shadow-sm transition-all group/img">
+              <button type="button" onclick="openGifModal('${exName}')" title="Ver animação: ${exName}" 
+                 class="relative block w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 cursor-pointer overflow-hidden rounded-xl border-2 border-transparent hover:border-red-400 shadow-sm transition-all group/img focus:outline-none">
                 
-                <!-- Imagem do exercício com onError para nunca quebrar -->
                 <img src="${specificIcon}" onerror="this.src='${cat.icon}'" alt="Ícone ${exName}" class="w-full h-full object-contain bg-white p-1 group-hover/img:brightness-75 transition-all">
                 
-                <!-- Overlay de Play -->
                 <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity duration-200 bg-black/20">
                   <svg class="w-7 h-7 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                 </div>
-              </a>
+              </button>
               <span class="font-extrabold text-slate-800 text-[13px] sm:text-[15px] leading-tight tracking-tight">${exName}</span>
             </td>
 
@@ -1015,7 +1066,7 @@
                 <tr class="bg-slate-50 text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 border-b border-slate-200">
                   <th class="p-2 text-center font-semibold">Treino</th>
                   <th class="p-2 text-center font-semibold">Ord.</th>
-                  <th class="p-3 font-semibold text-slate-500">Exercício <span class="lowercase font-normal text-[9px]">(Clique na foto para ver vídeo)</span></th>
+                  <th class="p-3 font-semibold text-slate-500">Exercício <span class="lowercase font-normal text-[9px]">(Clique na foto)</span></th>
                   <th class="p-2 text-center font-semibold">Sér.</th>
                   <th class="p-2 text-center font-semibold">Rep.</th>
                   <th class="p-2 text-center font-semibold">Pausa</th>
