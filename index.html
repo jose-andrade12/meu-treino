@@ -255,7 +255,6 @@
       appId: "1:1053749503001:web:124f4b425cbec242c53688"
     };
 
-    // 🔴 INSIRA SEU E-MAIL MASTER REAL DO GOOGLE AQUI:
     const MASTER_EMAIL = "rss.andrade@gmail.com";
 
     let db, auth;
@@ -474,7 +473,6 @@
       { category: "Ombros & Trapézio", color: "border-yellow-500 bg-yellow-50 text-yellow-900", icon: "https://img.icons8.com/color/96/deadlift.png", inputHighlight: "bg-yellow-100 border-2 border-yellow-500 text-yellow-900 shadow-inner", items: ["Elevação Lateral", "Elevação Frontal", "Desenvolvimento", "Desenvolvimento Frontal", "Desenvolvimento Dorsal", "Arnold", "Manguito Rotacional", "Push Press", "Manguito Interno Halter", "Crucifixo Invertido Halter", "Remada Alta (Trapézio)", "Encolhimento com Barra (Trapézio)"] }
     ];
 
-    // NOVA FUNÇÃO: Analisa o nome do exercício e retorna o ícone mais adequado
     function getExerciseIcon(exName, defaultCatIcon) {
       const n = exName.toLowerCase();
       
@@ -512,11 +510,9 @@
     }
 
     function loadCloudData() {
-      // 1. Inicializa os seletores de Ano e Mês de forma síncrona imediata
       initYearSelector();
       initExerciseMonthSelector();
 
-      // 2. Carrega os dados da nuvem assincronamente
       if (isCloudEnabled) {
         db.ref('meu_treino_app').on('value', (snapshot) => {
           const cloudData = snapshot.val();
@@ -542,7 +538,6 @@
       }
     }
 
-    // Função de Copiar Mês Anterior
     window.copyPreviousMonth = function() {
       if (!canEditCurrentAthlete()) return;
       
@@ -1090,7 +1085,6 @@
       window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
     };
 
-    // Inicialização do carregamento da nuvem
     loadCloudData();
 
   </script>
