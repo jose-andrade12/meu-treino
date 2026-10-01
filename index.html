@@ -513,6 +513,12 @@
     }
 
     function loadCloudData() {
+      // 1. CORREÇÃO: Inicializa os seletores de Ano e Mês IMEDIATAMENTE, 
+      // independentemente da conexão com o Firebase.
+      initYearSelector();
+      initExerciseMonthSelector();
+
+      // 2. Carrega os dados da nuvem assincronamente
       if (isCloudEnabled) {
         db.ref('meu_treino_app').on('value', (snapshot) => {
           const cloudData = snapshot.val();
@@ -520,21 +526,24 @@
             appData.athletes = cloudData.athletes;
           }
           isCloudLoaded = true;
-          initYearSelector();
-          initExerciseMonthSelector();
 
           if (currentUser) {
             const activeTag = document.activeElement ? document.activeElement.tagName : '';
+            // Evita piscar a tela e perder o foco se o usuário já estiver digitando
             if (activeTag === 'INPUT' || activeTag === 'SELECT') {
               return; 
             }
             refreshUI();
           }
+        }, (error) => {
+          // Validação/Tratamento de Erro: Caso o Firebase bloqueie a leitura inicial
+          console.warn("Aviso do Firebase (Pode ser ignorado se estiver deslogado):", error.message);
+          isCloudLoaded = true; 
+          // Permite que a interface continue carregando via LocalStorage
+          if (currentUser) refreshUI();
         });
       } else {
         isCloudLoaded = true;
-        initYearSelector();
-        initExerciseMonthSelector();
       }
     }
 
@@ -905,7 +914,7 @@
 
       const baseClasses = "w-full text-center text-xs font-bold rounded outline-none transition-colors duration-300 h-8";
       if (value.trim() !== "") {
-        inputElement.className = `${baseClasses} ${highlightClass} uppercase`;
+        inputElement.className = `${baseClasses}${highlightClass} uppercase`;
       } else {
         inputElement.className = `${baseClasses} bg-white border border-slate-300 text-slate-700 uppercase`;
       }
@@ -971,10 +980,10 @@
           return `
           <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
             <td class="p-2 text-center w-12 sm:w-16">
-              <input type="text" ${disabledAttr} value="${exData.treino || ''}" oninput="handleExerciseInput('${exName}', 'treino', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.treino ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
+              <input type="text" ${disabledAttr} value="${exData.treino \vert{}\vert{} ''}" oninput="handleExerciseInput('${exName}', 'treino', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.treino ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
             <td class="p-2 text-center w-12 sm:w-16">
-              <input type="text" ${disabledAttr} value="${exData.ordem || ''}" oninput="handleExerciseInput('${exName}', 'ordem', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.ordem ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
+              <input type="text" ${disabledAttr} value="${exData.ordem \vert{}\vert{} ''}" oninput="handleExerciseInput('${exName}', 'ordem', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.ordem ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
             
             <!-- ÁREA DA FOTO E NOME DO EXERCÍCIO (VISUAL DE APP) -->
@@ -994,13 +1003,13 @@
             </td>
 
             <td class="p-2 w-12 sm:w-16">
-              <input type="text" ${disabledAttr} value="${exData.serie || ''}" oninput="handleExerciseInput('${exName}', 'serie', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.serie ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
+              <input type="text" ${disabledAttr} value="${exData.serie \vert{}\vert{} ''}" oninput="handleExerciseInput('${exName}', 'serie', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.serie ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
             <td class="p-2 w-12 sm:w-16">
-              <input type="text" ${disabledAttr} value="${exData.rep || ''}" oninput="handleExerciseInput('${exName}', 'rep', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.rep ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
+              <input type="text" ${disabledAttr} value="${exData.rep \vert{}\vert{} ''}" oninput="handleExerciseInput('${exName}', 'rep', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.rep ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
             <td class="p-2 w-14 sm:w-20">
-              <input type="text" ${disabledAttr} value="${exData.pausa || ''}" oninput="handleExerciseInput('${exName}', 'pausa', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.pausa ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
+              <input type="text" ${disabledAttr} value="${exData.pausa \vert{}\vert{} ''}" oninput="handleExerciseInput('${exName}', 'pausa', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.pausa ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
           </tr>
         `}).join('');
