@@ -446,7 +446,7 @@
         localStorage.setItem('treino_data', JSON.stringify(appData));
         if (isCloudEnabled) db.ref(`meu_treino_app/athletes/${userName}`).remove();
         refreshUI();
-        alert(`🗑️️ Perfil de "${userName}" excluído.`);
+        alert(`🗑️ Perfil de "${userName}" excluído.`);
       }
     };
 
@@ -491,7 +491,6 @@
       if (n.includes('agachamento') || n.includes('afundo') || n.includes('leg')) return 'https://img.icons8.com/color/96/squats.png';
       if (n.includes('elevação') || n.includes('crucifixo') || n.includes('fly') || n.includes('manguito') || n.includes('encolhimento') || n.includes('antebraço')) return 'https://img.icons8.com/color/96/dumbbell.png';
 
-      // Se não encontrar uma palavra-chave acima, usa o ícone genérico do grupo muscular
       return defaultCatIcon;
     }
 
@@ -513,8 +512,7 @@
     }
 
     function loadCloudData() {
-      // 1. CORREÇÃO: Inicializa os seletores de Ano e Mês IMEDIATAMENTE, 
-      // independentemente da conexão com o Firebase.
+      // 1. Inicializa os seletores de Ano e Mês de forma síncrona imediata
       initYearSelector();
       initExerciseMonthSelector();
 
@@ -529,17 +527,14 @@
 
           if (currentUser) {
             const activeTag = document.activeElement ? document.activeElement.tagName : '';
-            // Evita piscar a tela e perder o foco se o usuário já estiver digitando
             if (activeTag === 'INPUT' || activeTag === 'SELECT') {
               return; 
             }
             refreshUI();
           }
         }, (error) => {
-          // Validação/Tratamento de Erro: Caso o Firebase bloqueie a leitura inicial
-          console.warn("Aviso do Firebase (Pode ser ignorado se estiver deslogado):", error.message);
+          console.warn("Aviso do Firebase:", error.message);
           isCloudLoaded = true; 
-          // Permite que a interface continue carregando via LocalStorage
           if (currentUser) refreshUI();
         });
       } else {
@@ -753,6 +748,7 @@
 
     function initYearSelector() {
       const select = document.getElementById('year-selector');
+      if (!select) return;
       select.innerHTML = '';
       for (let y = 2024; y <= 2030; y++) {
         let opt = document.createElement('option');
@@ -765,6 +761,7 @@
 
     function initExerciseMonthSelector() {
       const select = document.getElementById('exercise-month-selector');
+      if (!select) return;
       select.innerHTML = '';
       months.forEach((m, idx) => {
         let opt = document.createElement('option');
@@ -781,12 +778,12 @@
       if(currentAthleteData && !currentAthleteData.calendar[currentYear]) currentAthleteData.calendar[currentYear] = {};
       renderCalendar();
       renderExercises();
-    }
+    };
 
     window.changeExerciseMonth = function() {
       currentExerciseMonth = parseInt(document.getElementById('exercise-month-selector').value);
       renderExercises();
-    }
+    };
 
     window.applyFilter = function(type) {
       currentFilter = type;
@@ -929,6 +926,7 @@
 
     function renderExercises() {
       const container = document.getElementById('categories-container');
+      if (!container) return;
       container.innerHTML = '';
       
       const currentAthleteData = appData.athletes[appData.currentAthlete];
@@ -974,7 +972,6 @@
           
           const youtubeSearchUrl = `https://www.youtube.com/results?search_query=como+fazer+exercício+${encodeURIComponent(exName)}+musculação`;
           
-          // Usa a nossa inteligência para puxar o ícone certo (ou cai no padrão da categoria em caso de erro)
           const specificIcon = getExerciseIcon(exName, cat.icon);
 
           return `
@@ -986,15 +983,10 @@
               <input type="text" ${disabledAttr} value="${exData.ordem \vert{}\vert{} ''}" oninput="handleExerciseInput('${exName}', 'ordem', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.ordem ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
             
-            <!-- ÁREA DA FOTO E NOME DO EXERCÍCIO (VISUAL DE APP) -->
             <td class="p-3 flex items-center gap-3 relative min-w-[200px]">
               <a href="${youtubeSearchUrl}" target="_blank" title="Ver como fazer: ${exName} no YouTube" 
                  class="relative block w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 cursor-pointer overflow-hidden rounded-xl border-2 border-transparent hover:border-red-400 shadow-sm transition-all group/img">
-                
-                <!-- Imagem do exercício com onError para nunca quebrar -->
                 <img src="${specificIcon}" onerror="this.src='${cat.icon}'" alt="Ícone ${exName}" class="w-full h-full object-contain bg-white p-1 group-hover/img:brightness-75 transition-all">
-                
-                <!-- Overlay de Play -->
                 <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity duration-200 bg-black/20">
                   <svg class="w-7 h-7 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                 </div>
@@ -1012,7 +1004,8 @@
               <input type="text" ${disabledAttr} value="${exData.pausa \vert{}\vert{} ''}" oninput="handleExerciseInput('${exName}', 'pausa', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.pausa ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
           </tr>
-        `}).join('');
+        `;
+        }).join('');
 
         card.innerHTML = `
           <div class="p-3 border-b ${cat.color} font-bold text-sm sm:text-base flex justify-between items-center">
@@ -1097,7 +1090,7 @@
       window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
     };
 
-    // Iniciar tudo 
+    // Inicialização do carregamento da nuvem
     loadCloudData();
 
   </script>
