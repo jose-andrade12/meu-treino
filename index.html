@@ -1,1 +1,1149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle de Treino Diário</title>
+  
+  <!-- PWA / App no Celular -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Meu Treino">
+  
+  <!-- Ícone do App -->
+  <link rel="apple-touch-icon" href="minha-foto.jpg">
+  <link rel="icon" type="image/jpeg" href="minha-foto.jpg">
 
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Firebase App, Database & Auth -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+  <style>
+    .status-active { background-color: #facc15; font-weight: bold; color: #000; }
+    .status-x { background-color: #e5e7eb; color: #6b7280; }
+    .status-weekend { background-color: #d1fae5; color: #065f46; }
+    .status-n { background-color: #f3f4f6; color: #d1d5db; pointer-events: none; }
+    
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 font-sans p-2 sm:p-4 md:p-8">
+
+  <div class="max-w-7xl mx-auto space-y-6">
+    
+    <!-- CABEÇALHO -->
+    <header class="bg-white p-4 sm:p-6 rounded-xl shadow-md border border-slate-200">
+      <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 text-center md:text-left">
+        
+        <div class="flex flex-col sm:flex-row items-center gap-4">
+          <img id="user-avatar" src="minha-foto.jpg" onerror="this.src='https://i.imgur.com/8Q96Slx.png'" alt="Foto do Perfil" class="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-full border-4 border-blue-600 shadow-md">
+          <div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Meu Controle de Treinos</h1>
+            <p class="text-xs text-slate-500">Gerenciamento diário e mensal de performance</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-3 flex-wrap justify-center">
+          <!-- STATUS NUVEM -->
+          <div id="cloud-status" class="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-xs font-bold text-slate-500 border border-slate-300">
+            <span class="w-2 h-2 rounded-full bg-slate-400" id="cloud-indicator"></span>
+            <span id="cloud-text">Conectando...</span>
+          </div>
+
+          <!-- BOTÃO LOGIN GOOGLE -->
+          <button onclick="handleGoogleAuth()" id="auth-btn" class="flex items-center gap-2 px-4 py-2 rounded-full bg-white text-slate-700 hover:bg-slate-50 text-xs font-bold border border-slate-300 transition-all shadow-sm cursor-pointer">
+            <svg class="w-4 h-4" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.29v3.15C3.26 21.3 7.31 24 12 24z"/>
+              <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.29C.47 8.21 0 10.05 0 12s.47 3.79 1.29 5.42l3.99-3.15z"/>
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.58l3.99 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+            </svg>
+            <span id="auth-btn-text">Entrar com Google</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- PAINEL MASTER DE SOLICITAÇÕES PENDENTES DE APROVAÇÃO -->
+      <div id="master-pending-box" class="hidden bg-amber-50 border border-amber-300 p-4 rounded-xl shadow-sm space-y-3">
+        <h3 class="font-bold text-amber-900 text-sm flex items-center gap-2">
+          <span>🔔</span> Perfis Aguardando Sua Aprovação:
+        </h3>
+        <div id="pending-list" class="space-y-2"></div>
+      </div>
+      
+      <!-- CONTROLES DE PERFIL, ANO E NÍVEL (SOMENTE LOGADO) -->
+      <div id="controls-bar" class="hidden space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-200 items-center">
+          
+          <!-- SELETOR DE PERFIL + EXCLUIR + ADICIONAR + BADGE EMAIL -->
+          <div class="flex items-center gap-2 justify-center md:justify-start flex-wrap">
+            <span class="font-bold text-slate-700 text-sm">Perfil:</span>
+            <select id="athlete-selector" class="border border-blue-300 rounded p-1.5 font-bold text-blue-800 bg-blue-50 cursor-pointer text-sm" onchange="changeAthlete()">
+            </select>
+            <button onclick="addNewAthlete()" id="add-athlete-btn" class="hidden px-2 py-1.5 bg-blue-600 text-white text-xs font-bold rounded shadow hover:bg-blue-700 transition cursor-pointer" title="Adicionar Novo Perfil">＋</button>
+            <button onclick="deleteCurrentAthlete()" id="delete-athlete-btn" class="hidden px-2 py-1.5 bg-red-500 text-white text-xs font-bold rounded shadow hover:bg-red-600 transition cursor-pointer" title="Excluir Perfil Atual">🗑️</button>
+            
+            <!-- EXIBIÇÃO DE E-MAIL DO PERFIL ATUAL -->
+            <span id="current-athlete-email" class="hidden items-center gap-1 px-2 py-1.5 bg-slate-100 text-slate-500 text-[10px] sm:text-xs font-medium rounded border border-slate-200 truncate max-w-[200px]"></span>
+          </div>
+
+          <div class="flex items-center gap-3 justify-center">
+            <span class="font-bold text-slate-700 text-sm">Ano:</span>
+            <select id="year-selector" class="border border-slate-300 rounded p-1.5 font-bold text-slate-700 bg-white cursor-pointer text-sm" onchange="changeYear()">
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2 flex-wrap justify-center md:justify-end">
+            <span class="font-bold text-slate-700 text-sm mr-1">Nível:</span>
+            <div class="flex flex-wrap gap-1.5 justify-center" id="level-container"></div>
+          </div>
+        </div>
+
+        <!-- CARD DE DADOS DO ATLETA -->
+        <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">Data de Nascimento:</label>
+            <div class="flex items-center gap-1">
+              <input type="date" id="bio-dob" onchange="updateBioData()" class="w-full border border-slate-300 rounded p-1 bg-white font-medium">
+              <span id="bio-age" class="font-bold text-blue-700 whitespace-nowrap"></span>
+            </div>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">Gênero:</label>
+            <select id="bio-gender" onchange="updateBioData()" class="w-full border border-slate-300 rounded p-1 bg-white font-medium">
+              <option value="">Selecione</option>
+              <option value="Masculino">Masculino</option>
+              <option value="Feminino">Feminino</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">Altura (m):</label>
+            <input type="text" id="bio-height" placeholder="Ex: 1.75" oninput="updateBioData()" class="w-full border border-slate-300 rounded p-1 bg-white font-medium text-center">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">Peso (kg):</label>
+            <input type="text" id="bio-weight" placeholder="Ex: 75.5" oninput="updateBioData()" class="w-full border border-slate-300 rounded p-1 bg-white font-medium text-center">
+          </div>
+          <div class="col-span-2 sm:col-span-1 flex items-end">
+            <div id="bio-status" class="w-full text-center text-[11px] font-bold text-green-700 bg-green-100 py-1 rounded border border-green-200 hidden">Dados Salvos!</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- TELA DE BOAS-VINDAS / DESLOGADO -->
+    <div id="logged-out-card" class="bg-white p-8 sm:p-12 rounded-xl shadow-md border border-slate-200 text-center space-y-4">
+      <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-2xl shadow-inner">🔒</div>
+      <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Acesso Restrito ao Controle de Treinos</h2>
+      <p class="text-sm text-slate-500 max-w-md mx-auto">Para preservar a privacidade das informações e a identidade dos atletas, faça login com sua conta do Google para visualizar o seu plano de treinos.</p>
+      <button onclick="handleGoogleAuth()" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md transition-all cursor-pointer">
+        <svg class="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.29v3.15C3.26 21.3 7.31 24 12 24z"/>
+          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.29C.47 8.21 0 10.05 0 12s.47 3.79 1.29 5.42l3.99-3.15z"/>
+          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.58l3.99 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+        </svg>
+        Entrar com minha conta Google
+      </button>
+    </div>
+
+    <!-- TELA DE AGUARDANDO APROVAÇÃO (USUÁRIO PENDENTE) -->
+    <div id="pending-card" class="hidden bg-white p-8 sm:p-12 rounded-xl shadow-md border border-amber-200 text-center space-y-4">
+      <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner">⌛</div>
+      <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Aguardando Aprovação do Administrador</h2>
+      <p class="text-sm text-slate-600 max-w-md mx-auto">
+        Olá! Seu cadastro foi realizado com sucesso. Por motivos de segurança, o <span class="font-bold text-slate-800">Administrador Master</span> precisa aprovar seu perfil antes que você possa acessar e preencher os treinos.
+      </p>
+      <div class="pt-2">
+        <button onclick="handleGoogleAuth()" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-lg transition">Sair da conta</button>
+      </div>
+    </div>
+
+    <!-- ÁREA PRINCIPAL DO TREINO -->
+    <div id="main-content" class="hidden space-y-6">
+
+      <!-- CALENDÁRIO DIÁRIO -->
+      <section class="bg-white p-4 sm:p-6 rounded-xl shadow-md border border-slate-200">
+        <h2 class="text-lg sm:text-xl font-bold text-slate-800 mb-1">📅 Controle Diário (<span id="calendar-athlete-name">Atleta</span>)</h2>
+        <p class="text-xs text-slate-500 mb-4">Toque nas células para alternar: A - B - C - SAB - DOM - X = NÃO REALIZADO - F = FERIADO</p>
+
+        <div class="overflow-x-auto scrollbar-hide pb-2">
+          <div class="min-w-[850px]">
+            <div class="grid grid-cols-[90px_repeat(31,1fr)] gap-1 text-center font-bold text-[11px] mb-2 text-slate-500">
+              <div class="text-left pl-2">Mês</div>
+              <script>
+                for(let i=1; i<=31; i++) document.write(`<div>${i.toString().padStart(2, '0')}</div>`);
+              </script>
+            </div>
+            <div id="calendar-grid" class="space-y-1 text-xs"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- EXERCÍCIOS, FICHA E FILTRO -->
+      <section>
+        <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+          
+          <!-- Título, Seletor de Mês e Botão de Copiar Mês Anterior -->
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3 w-full xl:w-auto">
+            <h2 class="text-lg sm:text-xl font-bold text-slate-800 whitespace-nowrap">
+              📋 Ficha de Exercícios: <span id="exercise-athlete-name" class="text-blue-600">Atleta</span>
+            </h2>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <span class="text-xs font-bold text-slate-500 uppercase hidden sm:block">Mês:</span>
+              <select id="exercise-month-selector" class="border border-blue-300 rounded p-1.5 font-bold text-blue-800 bg-blue-50 cursor-pointer text-sm flex-1 sm:flex-none" onchange="changeExerciseMonth()">
+              </select>
+              
+              <!-- BOTÃO: COPIAR MÊS ANTERIOR -->
+              <button onclick="copyPreviousMonth()" id="btn-copy-month" class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 text-xs font-bold rounded-md shadow-sm transition-all cursor-pointer whitespace-nowrap" title="Copiar treinos do mês anterior">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/></svg>
+                <span class="hidden sm:inline">Copiar Mês Anterior</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- FILTROS -->
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
+            <div class="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-lg border border-slate-200 overflow-x-auto scrollbar-hide w-full sm:w-auto">
+              <span class="text-[10px] sm:text-xs font-bold text-slate-500 ml-2 uppercase tracking-wider whitespace-nowrap">Filtrar:</span>
+              <button onclick="applyFilter('ALL')" id="btn-filter-ALL" class="filter-btn px-3 py-1.5 text-xs font-bold rounded-md bg-blue-600 text-white shadow-md transition-all whitespace-nowrap cursor-pointer">Todos</button>
+              <button onclick="applyFilter('A')" id="btn-filter-A" class="filter-btn px-3 py-1.5 text-xs font-bold rounded-md bg-white text-slate-500 hover:bg-slate-200 transition-all whitespace-nowrap cursor-pointer">Treino A</button>
+              <button onclick="applyFilter('B')" id="btn-filter-B" class="filter-btn px-3 py-1.5 text-xs font-bold rounded-md bg-white text-slate-500 hover:bg-slate-200 transition-all whitespace-nowrap cursor-pointer">Treino B</button>
+              <button onclick="applyFilter('C')" id="btn-filter-C" class="filter-btn px-3 py-1.5 text-xs font-bold rounded-md bg-white text-slate-500 hover:bg-slate-200 transition-all whitespace-nowrap cursor-pointer">Treino C</button>
+              <button onclick="applyFilter('PREFILLED')" id="btn-filter-PREFILLED" class="filter-btn px-3 py-1.5 text-xs font-bold rounded-md bg-white text-slate-500 hover:bg-slate-200 transition-all whitespace-nowrap cursor-pointer">Preenchidos</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Container das Tabelas de Exercícios -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="categories-container"></div>
+        
+        <!-- BOTÃO WHATSAPP -->
+        <div class="mt-8 flex justify-center sm:justify-end">
+          <button onclick="shareWhatsApp()" class="flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-xl bg-green-500 hover:bg-green-600 text-white shadow-md transition-all whitespace-nowrap cursor-pointer w-full sm:w-auto">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
+            </svg>
+            <span class="inline">Compartilhar Treino no WhatsApp</span>
+          </button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- MODAL DE GIFS (FICA ESCONDIDO ATÉ O CLIQUE) -->
+  <div id="gif-modal" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex-col items-center justify-center p-4 backdrop-blur-sm transition-all">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl relative transform scale-100 transition-all">
+      <button onclick="closeGifModal()" class="absolute -top-3 -right-3 w-10 h-10 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg border-2 border-white transition-transform hover:scale-110 cursor-pointer">X</button>
+      
+      <h3 id="modal-title" class="text-lg font-extrabold text-slate-800 mb-4 border-b pb-2">Nome do Exercício</h3>
+      
+      <div id="modal-content" class="min-h-[180px] flex items-center justify-center">
+        <!-- O GIF será injetado aqui via JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. CONFIGURAÇÃO DA NUVEM (FIREBASE)
+    // ==========================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyC7frAlzt3M5PvPOsvPgNoB1dVhN18-ywY",
+      authDomain: "meu-treino-f3de4.firebaseapp.com",
+      databaseURL: "https://meu-treino-f3de4-default-rtdb.firebaseio.com",
+      projectId: "meu-treino-f3de4",
+      storageBucket: "meu-treino-f3de4.firebasestorage.app",
+      messagingSenderId: "1053749503001",
+      appId: "1:1053749503001:web:124f4b425cbec242c53688"
+    };
+
+    // 🔴 INSIRA SEU E-MAIL MASTER REAL DO GOOGLE AQUI:
+    const MASTER_EMAIL = "rss.andrade@gmail.com";
+
+    let db, auth;
+    let isCloudEnabled = false;
+    let isCloudLoaded = false;
+    let isMasterUser = false;
+    let currentUser = null;
+
+    try {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+      auth = firebase.auth();
+      isCloudEnabled = true;
+      updateCloudStatus(true);
+    } catch (e) {
+      console.log("Erro no Firebase.", e);
+      updateCloudStatus(false);
+    }
+
+    function updateCloudStatus(online) {
+      const indicator = document.getElementById('cloud-indicator');
+      const text = document.getElementById('cloud-text');
+      if (online) {
+        indicator.className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]";
+        text.innerText = "Sincronizado na Nuvem";
+        text.className = "text-green-700";
+      } else {
+        indicator.className = "w-2 h-2 rounded-full bg-slate-400";
+        text.innerText = "Nuvem Desativada (Salvo Local)";
+        text.className = "text-slate-500";
+      }
+    }
+
+    if (auth) {
+      auth.onAuthStateChanged((user) => {
+        currentUser = user;
+        if (user) {
+          const userEmail = (user.email || "").toLowerCase();
+          const userName = user.displayName || userEmail.split('@')[0];
+          
+          if (user.photoURL) {
+            document.getElementById('user-avatar').src = user.photoURL;
+          }
+
+          isMasterUser = (userEmail === MASTER_EMAIL.toLowerCase());
+
+          document.getElementById('auth-btn-text').innerText = `Sair (${userName})`;
+          document.getElementById('auth-btn').className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-green-800 hover:bg-green-200 text-xs font-bold border border-green-300 transition-all shadow-sm cursor-pointer";
+
+          if (!appData.athletes[userName]) {
+            appData.athletes[userName] = {
+              email: userEmail,
+              approved: isMasterUser ? true : false,
+              level: "Iniciante",
+              bio: { dob: "", gender: "", height: "", weight: "" },
+              calendar: {},
+              monthlyExercises: {}
+            };
+            saveData(userName);
+          } else if (!appData.athletes[userName].email) {
+            appData.athletes[userName].email = userEmail;
+            saveData(userName);
+          }
+
+          refreshUI();
+        } else {
+          isMasterUser = false;
+          document.getElementById('user-avatar').src = "minha-foto.jpg";
+          document.getElementById('auth-btn-text').innerText = "Entrar com Google";
+          document.getElementById('auth-btn').className = "flex items-center gap-2 px-4 py-2 rounded-full bg-white text-slate-700 hover:bg-slate-50 text-xs font-bold border border-slate-300 transition-all shadow-sm cursor-pointer";
+
+          document.getElementById('logged-out-card').classList.remove('hidden');
+          document.getElementById('pending-card').classList.add('hidden');
+          document.getElementById('main-content').classList.add('hidden');
+          document.getElementById('controls-bar').classList.add('hidden');
+          document.getElementById('master-pending-box').classList.add('hidden');
+        }
+      });
+    }
+
+    window.handleGoogleAuth = function() {
+      if (!currentUser) {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch((error) => {
+          alert("Erro ao realizar login com o Google: " + error.message);
+          console.error(error);
+        });
+      } else {
+        auth.signOut().then(() => {
+          alert("Desconectado com sucesso.");
+        });
+      }
+    };
+
+    function refreshUI() {
+      if (!currentUser) return;
+
+      const userName = currentUser.displayName || (currentUser.email || "").split('@')[0];
+      const loggedOutCard = document.getElementById('logged-out-card');
+      const pendingCard = document.getElementById('pending-card');
+      const mainContent = document.getElementById('main-content');
+      const controlsBar = document.getElementById('controls-bar');
+
+      Object.keys(appData.athletes).forEach(name => {
+        if (appData.athletes[name].approved === undefined) {
+          appData.athletes[name].approved = true;
+        }
+      });
+
+      const currentAthleteData = appData.athletes[userName];
+
+      if (!isMasterUser && currentAthleteData && !currentAthleteData.approved) {
+        loggedOutCard.classList.add('hidden');
+        pendingCard.classList.remove('hidden');
+        mainContent.classList.add('hidden');
+        controlsBar.classList.add('hidden');
+        document.getElementById('master-pending-box').classList.add('hidden');
+        return;
+      }
+
+      loggedOutCard.classList.add('hidden');
+      pendingCard.classList.add('hidden');
+      mainContent.classList.remove('hidden');
+      controlsBar.classList.remove('hidden');
+
+      if (isMasterUser) {
+        document.getElementById('add-athlete-btn').classList.remove('hidden');
+        document.getElementById('delete-athlete-btn').classList.remove('hidden');
+      } else {
+        appData.currentAthlete = userName;
+        document.getElementById('add-athlete-btn').classList.add('hidden');
+        document.getElementById('delete-athlete-btn').classList.add('hidden');
+      }
+
+      initAthleteSelector();
+      renderMasterPendingList();
+      renderAll();
+    }
+
+    function renderMasterPendingList() {
+      const box = document.getElementById('master-pending-box');
+      const list = document.getElementById('pending-list');
+      list.innerHTML = '';
+
+      if (!isMasterUser) return box.classList.add('hidden');
+
+      const pendingUsers = Object.keys(appData.athletes).filter(
+        name => appData.athletes[name].approved === false
+      );
+
+      if (pendingUsers.length === 0) return box.classList.add('hidden');
+
+      box.classList.remove('hidden');
+
+      pendingUsers.forEach(userName => {
+        const userEmail = appData.athletes[userName].email || "Sem e-mail cadastrado";
+        const row = document.createElement('div');
+        row.className = "flex flex-col md:flex-row md:items-center justify-between bg-white p-3 rounded-lg border border-amber-200 text-xs shadow-sm gap-3";
+        row.innerHTML = `
+          <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+            <div class="font-bold text-slate-800 text-sm">👤 ${userName}</div>
+            <div class="text-[10px] sm:text-xs font-medium text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded w-fit">✉️ ${userEmail}</div>
+            <div class="text-slate-400 font-normal text-[10px] sm:text-xs italic">(Aguardando aprovação)</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="approveAthlete('${userName}')" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white font-bold rounded shadow transition cursor-pointer">Aprovar ✅</button>
+            <button onclick="rejectAthlete('${userName}')" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white font-bold rounded shadow transition cursor-pointer">Recusar 🗑️</button>
+          </div>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    window.approveAthlete = function(userName) {
+      if (!isMasterUser) return;
+      if (appData.athletes[userName]) {
+        appData.athletes[userName].approved = true;
+        saveData(userName);
+        refreshUI();
+        alert(`✅ Perfil de "${userName}" aprovado com sucesso!`);
+      }
+    };
+
+    window.rejectAthlete = function(userName) {
+      if (!isMasterUser) return;
+      if (confirm(`Deseja recusar e excluir o cadastro de "${userName}"?`)) {
+        delete appData.athletes[userName];
+        localStorage.setItem('treino_data', JSON.stringify(appData));
+        if (isCloudEnabled) db.ref(`meu_treino_app/athletes/${userName}`).remove();
+        refreshUI();
+        alert(`🗑️ Perfil de "${userName}" excluído.`);
+      }
+    };
+
+    // ==========================================
+    // 2. DADOS DO APLICATIVO E ÍCONES DINÂMICOS
+    // ==========================================
+    const levels = ["Iniciante", "Básico", "Básico II", "Intermediário", "Avançado", "Avançado II"];
+    const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    const statusList = ["", "A", "B", "C", "S", "D", "X", "F"];
+
+    let appData = JSON.parse(localStorage.getItem('treino_data')) || {};
+    if (!appData.athletes) { appData.athletes = {}; }
+
+    let currentYear = new Date().getFullYear();
+    if(currentYear < 2026) currentYear = 2026; 
+    let currentExerciseMonth = new Date().getMonth(); 
+    let currentFilter = 'ALL'; 
+
+    const exercisesList = [
+      { category: "Abdômen", color: "border-sky-500 bg-sky-50 text-sky-900", icon: "https://img.icons8.com/color/96/sit-ups.png", inputHighlight: "bg-sky-100 border-2 border-sky-500 text-sky-900 shadow-inner", items: ["Carrinho", "Supra chão", "Banco com peso (lat. / front.)", "Infra corda", "Oblíquo Calcanhar", "Prancha Lateral", "Oblíquo lateral (banco)", "Ponte", "Crunch na bola suíça", "Abdominal cruzado", "Infra Canivete", "Infra Banco", "Bicicleta", "Supra Encolhimento", "Prancha Alta"] },
+      { category: "Membros Inferiores (Pernas)", color: "border-amber-500 bg-amber-50 text-amber-900", icon: "https://img.icons8.com/color/96/squats.png", inputHighlight: "bg-amber-100 border-2 border-amber-500 text-amber-900 shadow-inner", items: ["Extensão", "Agachamento sumô com halteres", "Agachamento parede com bola", "Afundo", "Gluteo Cross", "Gluteo agachamento com elastico", "Adução com Elastico", "Posterior com bola", "Gêmeos Maquina", "Leg Horizontal", "Leg 45º (Sumo)", "Glúteo Máquina", "Flexor Vertical (maq.)", "Panturrilha", "Stiff Barra", "Agachamento parede", "Tibial Barrinha", "Posterior (Pulley)"] },
+      { category: "Peitorais", color: "border-blue-500 bg-blue-50 text-blue-900", icon: "https://img.icons8.com/color/96/pushups.png", inputHighlight: "bg-blue-100 border-2 border-blue-500 text-blue-900 shadow-inner", items: ["Supino Declinado", "Cross Over", "Fly Declinado", "Flexão de Braço", "Crucifixo Reto", "Crucifixo Inclinado", "Supino Reto", "Supino Inclinado", "Peck-Deck", "Fly Reto", "Fly Inclinado", "Abdomen Infra", "Abdomen Infra Corda"] },
+      { category: "Dorsais (Costas)", color: "border-indigo-500 bg-indigo-50 text-indigo-900", icon: "https://img.icons8.com/color/96/pullups.png", inputHighlight: "bg-indigo-100 border-2 border-indigo-500 text-indigo-900 shadow-inner", items: ["Pulley Costas", "Pulley Frente", "Remada Articulada", "Remada Baixa", "Pullover", "Remada baixa aberta", "Pulldown", "Remada Uni Lateral", "Remada Cavalinho", "Barra Livre", "Barra Smith", "Peck Dorsal", "Remada Aberta"] },
+      { category: "Braços (Tríceps, Bíceps, Antebraço)", color: "border-emerald-500 bg-emerald-50 text-emerald-900", icon: "https://img.icons8.com/color/96/flex-biceps.png", inputHighlight: "bg-emerald-100 border-2 border-emerald-500 text-emerald-900 shadow-inner", items: ["Tríceps Testa", "Tríceps Francês Unilateral c/ halteres", "Tríceps Pulley", "Tríceps Corda", "Tríceps Banco", "Tríceps Coice Unil. Cross", "Tríceps Supinado com Halter", "Tríceps Paralela", "Bíceps Rosca com Martelo", "Bíceps Rosca Direta", "Bíceps Rosca Concentrada", "Bíceps Rosca Alternada", "Bíceps Rosca invertida", "Bíceps Rosca 90º Cross", "Bíceps Rosca Scott", "Bíceps Cross Alto", "Antebraço Rosca Inversa c/ barra", "Antebraço Rosca Punho", "Antebraço Rosca Punho Inversa"] },
+      { category: "Ombros & Trapézio", color: "border-yellow-500 bg-yellow-50 text-yellow-900", icon: "https://img.icons8.com/color/96/deadlift.png", inputHighlight: "bg-yellow-100 border-2 border-yellow-500 text-yellow-900 shadow-inner", items: ["Elevação Lateral", "Elevação Frontal", "Desenvolvimento", "Desenvolvimento Frontal", "Desenvolvimento Dorsal", "Arnold", "Manguito Rotacional", "Push Press", "Manguito Interno Halter", "Crucifixo Invertido Halter", "Remada Alta (Trapézio)", "Encolhimento com Barra (Trapézio)"] }
+    ];
+
+    function getExerciseIcon(exName, defaultCatIcon) {
+      const n = exName.toLowerCase();
+      if (n.includes('supino')) return 'https://img.icons8.com/color/96/bench-press-with-dumbbells.png';
+      if (n.includes('flexão') || n.includes('flexao') || n.includes('tríceps') || n.includes('triceps')) return 'https://img.icons8.com/color/96/pushups.png';
+      if (n.includes('prancha') || n.includes('ponte')) return 'https://img.icons8.com/color/96/plank.png';
+      if (n.includes('bicicleta')) return 'https://img.icons8.com/color/96/cycling.png';
+      if (n.includes('carrinho')) return 'https://img.icons8.com/color/96/treadmill.png';
+      if (n.includes('remada') || n.includes('cavalinho')) return 'https://img.icons8.com/color/96/rowing.png';
+      if (n.includes('stiff')) return 'https://img.icons8.com/color/96/deadlift.png';
+      if (n.includes('desenvolvimento') || n.includes('arnold') || n.includes('press')) return 'https://img.icons8.com/color/96/weightlifting.png';
+      if (n.includes('rosca') || n.includes('bíceps') || n.includes('biceps')) return 'https://img.icons8.com/color/96/flex-biceps.png';
+      if (n.includes('barra') || n.includes('pulley') || n.includes('pulldown')) return 'https://img.icons8.com/color/96/pullups.png';
+      if (n.includes('agachamento') || n.includes('afundo') || n.includes('leg')) return 'https://img.icons8.com/color/96/squats.png';
+      if (n.includes('elevação') || n.includes('crucifixo') || n.includes('fly') || n.includes('manguito') || n.includes('encolhimento') || n.includes('antebraço')) return 'https://img.icons8.com/color/96/dumbbell.png';
+      return defaultCatIcon;
+    }
+
+    // ==========================================
+    // 3. DICIONÁRIO DE GIFS (HOSPEDAGEM DIRETA)
+    // ==========================================
+    // Cole aqui os links de GIFs (do Giphy, Tenor, Pinterest, ou seu próprio servidor)
+    // O nome escrito aqui DEVE ser idêntico ao nome do exercício na lista.
+    const gifDatabase = {
+      "Supino Reto": "https://media1.tenor.com/m/o6o0N204nYEAAAAC/barbell-bench-press.gif",
+      "Flexão de Braço": "https://media1.tenor.com/m/9ZikNtvn0kUAAAAd/push-up.gif",
+      "Agachamento sumô com halteres": "https://media1.tenor.com/m/dK5rE3_YwR0AAAAd/squat-squats.gif", // Exemplo generico de agachamento
+      "Prancha Alta": "https://media1.tenor.com/m/b_VOnx3B88AAAAC/plank.gif"
+    };
+
+    // CONTROLES DO MODAL (JANELA DE VÍDEO IN-APP)
+    window.openGifModal = function(exName) {
+      const modal = document.getElementById('gif-modal');
+      const title = document.getElementById('modal-title');
+      const content = document.getElementById('modal-content');
+      
+      title.innerText = exName;
+      
+      if (gifDatabase[exName]) {
+        // Se o GIF estiver cadastrado, mostra ele dentro do app
+        content.innerHTML = `<img src="${gifDatabase[exName]}" class="w-full h-auto rounded-lg shadow-md border border-slate-200">`;
+      } else {
+        // Se não tiver GIF, mostra mensagem de erro chique e dá a opção de YouTube
+        const youtubeSearchUrl = `https://www.youtube.com/results?search_query=como+fazer+exercício+${encodeURIComponent(exName)}+musculação`;
+        content.innerHTML = `
+          <div class="space-y-4 text-center">
+            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-3xl">📭</div>
+            <p class="text-sm text-slate-500">GIF ainda não cadastrado no sistema para este exercício.</p>
+            <a href="${youtubeSearchUrl}" target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-xl transition-all shadow-md">
+              <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+              Ver no YouTube
+            </a>
+          </div>
+        `;
+      }
+      
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    window.closeGifModal = function() {
+      const modal = document.getElementById('gif-modal');
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
+    }
+
+
+    function canEditCurrentAthlete() {
+      if (!currentUser) return false;
+      if (isMasterUser) return true;
+      const userName = currentUser.displayName || (currentUser.email || "").split('@')[0];
+      return appData.currentAthlete === userName;
+    }
+
+    function saveData(specificAthlete = null) {
+      localStorage.setItem('treino_data', JSON.stringify(appData));
+      if (isCloudEnabled && isCloudLoaded) {
+        const athleteToSave = specificAthlete || appData.currentAthlete;
+        if (athleteToSave && appData.athletes[athleteToSave]) {
+          db.ref(`meu_treino_app/athletes/${athleteToSave}`).set(appData.athletes[athleteToSave]);
+        }
+      }
+    }
+
+    function loadCloudData() {
+      if (isCloudEnabled) {
+        db.ref('meu_treino_app').on('value', (snapshot) => {
+          const cloudData = snapshot.val();
+          if (cloudData && cloudData.athletes) {
+            appData.athletes = cloudData.athletes;
+          }
+          isCloudLoaded = true;
+          initYearSelector();
+          initExerciseMonthSelector();
+
+          if (currentUser) {
+            const activeTag = document.activeElement ? document.activeElement.tagName : '';
+            if (activeTag === 'INPUT' || activeTag === 'SELECT') {
+              return; 
+            }
+            refreshUI();
+          }
+        });
+      } else {
+        isCloudLoaded = true;
+        initYearSelector();
+        initExerciseMonthSelector();
+      }
+    }
+
+    window.copyPreviousMonth = function() {
+      if (!canEditCurrentAthlete()) return;
+      
+      let prevMonth = currentExerciseMonth - 1;
+      let prevYear = currentYear;
+      
+      if (prevMonth < 0) {
+        prevMonth = 11;
+        prevYear--;
+      }
+
+      const currentAthleteData = appData.athletes[appData.currentAthlete];
+      const prevMonthKey = `${prevYear}-${prevMonth}`;
+      const currMonthKey = `${currentYear}-${currentExerciseMonth}`;
+
+      let hasData = false;
+      if (currentAthleteData.monthlyExercises && currentAthleteData.monthlyExercises[prevMonthKey]) {
+        if (Object.keys(currentAthleteData.monthlyExercises[prevMonthKey]).length > 0) hasData = true;
+      }
+
+      if (!hasData) {
+        alert(`Nenhum treino preenchido foi encontrado em ${months[prevMonth]}/${prevYear} para poder copiar.`);
+        return;
+      }
+
+      const msg = `Deseja copiar todos os treinos de ${months[prevMonth]}/${prevYear} para ${months[currentExerciseMonth]}/${currentYear}?\n\n⚠️ Atenção: Isso irá apagar e substituir o que estiver preenchido no mês atual.`;
+      if (confirm(msg)) {
+        if (!currentAthleteData.monthlyExercises) currentAthleteData.monthlyExercises = {};
+        
+        currentAthleteData.monthlyExercises[currMonthKey] = JSON.parse(JSON.stringify(currentAthleteData.monthlyExercises[prevMonthKey]));
+        
+        saveData();
+        renderExercises();
+        alert("✅ Mês copiado com sucesso!");
+      }
+    };
+
+    function renderAll() {
+      const approvedKeys = Object.keys(appData.athletes).filter(
+        name => appData.athletes[name].approved !== false
+      );
+
+      if (!appData.currentAthlete || !appData.athletes[appData.currentAthlete]) {
+        if (approvedKeys.length > 0) {
+          appData.currentAthlete = approvedKeys[0];
+        }
+      }
+
+      if (!appData.currentAthlete || !appData.athletes[appData.currentAthlete]) return;
+
+      const currentAthleteData = appData.athletes[appData.currentAthlete];
+      if(!currentAthleteData.calendar) currentAthleteData.calendar = {};
+      if(!currentAthleteData.monthlyExercises) currentAthleteData.monthlyExercises = {};
+      if(!currentAthleteData.bio) currentAthleteData.bio = { dob: "", gender: "", height: "", weight: "" };
+
+      document.getElementById('calendar-athlete-name').innerText = appData.currentAthlete;
+      document.getElementById('exercise-athlete-name').innerText = appData.currentAthlete;
+
+      const emailBadge = document.getElementById('current-athlete-email');
+      if (currentAthleteData.email && currentAthleteData.email !== "") {
+        emailBadge.innerText = `✉️ ${currentAthleteData.email}`;
+        emailBadge.classList.remove('hidden');
+        emailBadge.classList.add('flex');
+      } else {
+        emailBadge.classList.add('hidden');
+        emailBadge.classList.remove('flex');
+      }
+
+      const copyBtn = document.getElementById('btn-copy-month');
+      if (copyBtn) {
+        copyBtn.style.display = canEditCurrentAthlete() ? '' : 'none';
+      }
+
+      renderBio();
+      renderLevels();
+      renderCalendar();
+      renderExercises();
+    }
+
+    function renderBio() {
+      const athlete = appData.athletes[appData.currentAthlete];
+      if (!athlete) return;
+      const bio = athlete.bio || { dob: "", gender: "", height: "", weight: "" };
+
+      document.getElementById('bio-dob').value = bio.dob || "";
+      document.getElementById('bio-gender').value = bio.gender || "";
+      document.getElementById('bio-height').value = bio.height || "";
+      document.getElementById('bio-weight').value = bio.weight || "";
+
+      const ageSpan = document.getElementById('bio-age');
+      if (bio.dob) {
+        const today = new Date();
+        const birthDate = new Date(bio.dob);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+        ageSpan.innerText = `(${age} anos)`;
+      } else {
+        ageSpan.innerText = "";
+      }
+
+      const canEdit = canEditCurrentAthlete();
+      document.getElementById('bio-dob').disabled = !canEdit;
+      document.getElementById('bio-gender').disabled = !canEdit;
+      document.getElementById('bio-height').disabled = !canEdit;
+      document.getElementById('bio-weight').disabled = !canEdit;
+    }
+
+    window.updateBioData = function() {
+      if (!canEditCurrentAthlete()) return;
+      const athlete = appData.athletes[appData.currentAthlete];
+      if (!athlete.bio) athlete.bio = {};
+
+      athlete.bio.dob = document.getElementById('bio-dob').value;
+      athlete.bio.gender = document.getElementById('bio-gender').value;
+      athlete.bio.height = document.getElementById('bio-height').value;
+      athlete.bio.weight = document.getElementById('bio-weight').value;
+
+      saveData();
+      renderBio();
+
+      const status = document.getElementById('bio-status');
+      status.classList.remove('hidden');
+      setTimeout(() => status.classList.add('hidden'), 2000);
+    };
+
+    function initAthleteSelector() {
+      const select = document.getElementById('athlete-selector');
+      select.innerHTML = '';
+
+      if (currentUser && isMasterUser) {
+        Object.keys(appData.athletes).forEach(athleteName => {
+          if (appData.athletes[athleteName].approved !== false) {
+            let opt = document.createElement('option');
+            opt.value = athleteName;
+            opt.innerText = athleteName;
+            if (athleteName === appData.currentAthlete) opt.selected = true;
+            select.appendChild(opt);
+          }
+        });
+        select.disabled = false;
+      } else if (currentUser) {
+        const userName = currentUser.displayName || (currentUser.email || "").split('@')[0];
+        let opt = document.createElement('option');
+        opt.value = userName;
+        opt.innerText = userName;
+        select.appendChild(opt);
+        select.disabled = true;
+        appData.currentAthlete = userName;
+      }
+    }
+
+    window.changeAthlete = function() {
+      appData.currentAthlete = document.getElementById('athlete-selector').value;
+      renderAll();
+    };
+
+    window.addNewAthlete = function() {
+      if (!isMasterUser) return;
+      let name = prompt("Digite o nome do novo Perfil:");
+      if (name && name.trim() !== "") {
+        name = name.trim();
+        if (appData.athletes[name]) {
+          alert("Este perfil já existe!");
+          return;
+        }
+        appData.athletes[name] = {
+          email: "",
+          approved: true,
+          level: "Iniciante",
+          bio: { dob: "", gender: "", height: "", weight: "" },
+          calendar: {},
+          monthlyExercises: {}
+        };
+        appData.currentAthlete = name;
+        saveData(name);
+        initAthleteSelector();
+        renderAll();
+        alert(`✅ Perfil ${name} criado com sucesso!`);
+      }
+    };
+
+    window.deleteCurrentAthlete = function() {
+      if (!isMasterUser) return;
+      const keys = Object.keys(appData.athletes);
+      if (keys.length <= 1) {
+        alert("Não é possível excluir o último perfil restante!");
+        return;
+      }
+      const current = appData.currentAthlete;
+      if (confirm(`Tem certeza que deseja excluir permanentemente o perfil "${current}"?`)) {
+        delete appData.athletes[current];
+        appData.currentAthlete = Object.keys(appData.athletes)[0];
+        
+        localStorage.setItem('treino_data', JSON.stringify(appData));
+        if (isCloudEnabled) db.ref(`meu_treino_app/athletes/${current}`).remove();
+        
+        initAthleteSelector();
+        renderAll();
+        alert(`🗑️ Perfil "${current}" excluído com sucesso.`);
+      }
+    };
+
+    function initYearSelector() {
+      const select = document.getElementById('year-selector');
+      if (!select) return;
+      select.innerHTML = '';
+      for (let y = 2024; y <= 2030; y++) {
+        let opt = document.createElement('option');
+        opt.value = y;
+        opt.innerText = y;
+        if (y === currentYear) opt.selected = true;
+        select.appendChild(opt);
+      }
+    }
+
+    function initExerciseMonthSelector() {
+      const select = document.getElementById('exercise-month-selector');
+      if (!select) return;
+      select.innerHTML = '';
+      months.forEach((m, idx) => {
+        let opt = document.createElement('option');
+        opt.value = idx;
+        opt.innerText = m;
+        if (idx === currentExerciseMonth) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    window.changeYear = function() {
+      currentYear = parseInt(document.getElementById('year-selector').value);
+      const currentAthleteData = appData.athletes[appData.currentAthlete];
+      if(currentAthleteData && !currentAthleteData.calendar[currentYear]) currentAthleteData.calendar[currentYear] = {};
+      renderCalendar();
+      renderExercises();
+    }
+
+    window.changeExerciseMonth = function() {
+      currentExerciseMonth = parseInt(document.getElementById('exercise-month-selector').value);
+      renderExercises();
+    }
+
+    window.applyFilter = function(type) {
+      currentFilter = type;
+      
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+        btn.classList.add('bg-white', 'text-slate-500', 'hover:bg-slate-200');
+      });
+
+      const activeBtn = document.getElementById(`btn-filter-${type}`);
+      if(activeBtn) {
+        activeBtn.classList.remove('bg-white', 'text-slate-500', 'hover:bg-slate-200');
+        activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+      }
+      renderExercises();
+    };
+
+    function getDaysInMonth(monthIndex, year) {
+      return new Date(year, monthIndex + 1, 0).getDate();
+    }
+
+    function renderLevels() {
+      const container = document.getElementById('level-container');
+      container.innerHTML = '';
+      const currentAthleteData = appData.athletes[appData.currentAthlete];
+      if (!currentAthleteData) return;
+      const canEdit = canEditCurrentAthlete();
+
+      levels.forEach(lvl => {
+        const btn = document.createElement('button');
+        btn.className = `px-2.5 py-1 text-xs font-semibold rounded-md border transition-all ${
+          currentAthleteData.level === lvl ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100'
+        }`;
+        btn.innerText = lvl;
+        
+        if (!canEdit) {
+          btn.disabled = true;
+          btn.classList.add('opacity-75', 'cursor-not-allowed');
+        } else {
+          btn.onclick = () => {
+            currentAthleteData.level = lvl;
+            saveData();
+            renderLevels();
+          };
+        }
+        container.appendChild(btn);
+      });
+    }
+
+    function renderCalendar() {
+      const grid = document.getElementById('calendar-grid');
+      grid.innerHTML = '';
+      
+      const currentAthleteData = appData.athletes[appData.currentAthlete];
+      if (!currentAthleteData) return;
+      if (!currentAthleteData.calendar) currentAthleteData.calendar = {};
+      if (!currentAthleteData.calendar[currentYear]) currentAthleteData.calendar[currentYear] = {};
+      const canEdit = canEditCurrentAthlete();
+
+      months.forEach((month, mIdx) => {
+        const row = document.createElement('div');
+        row.className = 'grid grid-cols-[90px_repeat(31,1fr)] gap-1 items-center';
+        row.innerHTML = `<div class="font-bold text-slate-700 pl-2 text-left">${month}</div>`;
+
+        const maxDays = getDaysInMonth(mIdx, currentYear);
+
+        for(let day = 1; day <= 31; day++) {
+          const key = `${mIdx}-${day}`;
+          let cellVal = currentAthleteData.calendar[currentYear][key] || '';
+          const cell = document.createElement('button');
+          
+          if (day > maxDays) {
+            cell.className = 'h-7 border border-slate-200 rounded text-center font-bold flex items-center justify-center status-n text-[10px]';
+            cell.innerText = 'N';
+          } else {
+            cell.className = `h-7 border border-slate-200 rounded text-center font-bold flex items-center justify-center transition-all text-[11px] ${getStatusClass(cellVal)}`;
+            cell.innerText = cellVal;
+
+            if (!canEdit) {
+              cell.classList.add('cursor-default');
+            } else {
+              cell.classList.add('cursor-pointer');
+              cell.onclick = () => {
+                let nextIdx = (statusList.indexOf(cellVal) + 1) % statusList.length;
+                cellVal = statusList[nextIdx];
+                currentAthleteData.calendar[currentYear][key] = cellVal;
+                saveData();
+                
+                cell.innerText = cellVal;
+                cell.className = `h-7 border border-slate-200 rounded text-center font-bold flex items-center justify-center cursor-pointer transition-all text-[11px] ${getStatusClass(cellVal)}`;
+              };
+            }
+          }
+          row.appendChild(cell);
+        }
+        grid.appendChild(row);
+      });
+    }
+
+    function getStatusClass(val) {
+      if (['A', 'B', 'C'].includes(val)) return 'status-active';
+      if (['S', 'D'].includes(val)) return 'status-weekend';
+      if (val === 'X') return 'status-x';
+      if (val === 'F') return 'bg-red-200 text-red-800';
+      return 'bg-white hover:bg-slate-50';
+    }
+
+    let exerciseTypingTimer;
+
+    window.handleExerciseInput = function(exName, field, inputElement, highlightClass) {
+      if (!canEditCurrentAthlete()) return;
+      
+      const currentAthleteData = appData.athletes[appData.currentAthlete];
+      const monthKey = `${currentYear}-${currentExerciseMonth}`;
+      if (!currentAthleteData.monthlyExercises) currentAthleteData.monthlyExercises = {};
+      if (!currentAthleteData.monthlyExercises[monthKey]) currentAthleteData.monthlyExercises[monthKey] = {};
+      if (!currentAthleteData.monthlyExercises[monthKey][exName]) {
+        currentAthleteData.monthlyExercises[monthKey][exName] = { treino: "", ordem: "", serie: "", rep: "", pausa: "" };
+      }
+      
+      const value = inputElement.value;
+      currentAthleteData.monthlyExercises[monthKey][exName][field] = value;
+      
+      localStorage.setItem('treino_data', JSON.stringify(appData));
+
+      const baseClasses = "w-full text-center text-xs font-bold rounded outline-none transition-colors duration-300 h-8";
+      if (value.trim() !== "") {
+        inputElement.className = `${baseClasses}${highlightClass} uppercase`;
+      } else {
+        inputElement.className = `${baseClasses} bg-white border border-slate-300 text-slate-700 uppercase`;
+      }
+
+      clearTimeout(exerciseTypingTimer);
+      exerciseTypingTimer = setTimeout(() => {
+        if (isCloudEnabled && isCloudLoaded) {
+          db.ref(`meu_treino_app/athletes/${appData.currentAthlete}`).set(appData.athletes[appData.currentAthlete]);
+        }
+      }, 1000);
+    };
+
+    function renderExercises() {
+      const container = document.getElementById('categories-container');
+      container.innerHTML = '';
+      
+      const currentAthleteData = appData.athletes[appData.currentAthlete];
+      if (!currentAthleteData) return;
+      const monthKey = `${currentYear}-${currentExerciseMonth}`;
+      if (!currentAthleteData.monthlyExercises) currentAthleteData.monthlyExercises = {};
+      const monthData = currentAthleteData.monthlyExercises[monthKey] || {};
+      const canEdit = canEditCurrentAthlete();
+
+      exercisesList.forEach(cat => {
+        let filteredItems = cat.items.filter(exName => {
+          const exData = monthData[exName] || {};
+          const treinoAssinalado = (exData.treino || "").toUpperCase();
+          
+          const hasAnyData = (exData.treino && exData.treino.trim() !== "") || 
+                             (exData.ordem && exData.ordem.trim() !== "") || 
+                             (exData.serie && exData.serie.trim() !== "") || 
+                             (exData.rep && exData.rep.trim() !== "") || 
+                             (exData.pausa && exData.pausa.trim() !== "");
+
+          if (currentFilter === 'ALL') {
+            return true;
+          } else if (currentFilter === 'PREFILLED') {
+            return hasAnyData;
+          } else {
+            return treinoAssinalado.includes(currentFilter);
+          }
+        });
+
+        if (filteredItems.length === 0) return;
+
+        const card = document.createElement('div');
+        card.className = `bg-white rounded-xl shadow-md border overflow-hidden`;
+        
+        const baseInputClass = "w-full text-center text-xs font-bold rounded outline-none transition-colors duration-300 h-8";
+        const emptyClass = "bg-white border border-slate-300 text-slate-700";
+
+        let tableRows = filteredItems.map(exName => {
+          const exData = monthData[exName] || { treino: "", ordem: "", serie: "", rep: "", pausa: "" };
+
+          const disabledAttr = !canEdit ? 'disabled' : '';
+          const disabledStyle = !canEdit ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : '';
+          
+          const specificIcon = getExerciseIcon(exName, cat.icon);
+
+          return `
+          <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
+            <td class="p-2 text-center w-12 sm:w-16">
+              <input type="text" ${disabledAttr} value="${exData.treino \vert{}\vert{} ''}" oninput="handleExerciseInput('${exName}', 'treino', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.treino ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
+            </td>
+            <td class="p-2 text-center w-12 sm:w-16">
+              <input type="text" ${disabledAttr} value="${exData.ordem \vert{}\vert{} ''}" oninput="handleExerciseInput('${exName}', 'ordem', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.ordem ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
+            </td>
+            
+            <!-- ÁREA DA FOTO E NOME DO EXERCÍCIO (VISUAL DE APP E MODAL) -->
+            <td class="p-3 flex items-center gap-3 relative min-w-[200px]">
+              <button type="button" onclick="openGifModal('${exName}')" title="Ver animação: ${exName}" 
+                 class="relative block w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 cursor-pointer overflow-hidden rounded-xl border-2 border-transparent hover:border-red-400 shadow-sm transition-all group/img focus:outline-none">
+                
+                <img src="${specificIcon}" onerror="this.src='${cat.icon}'" alt="Ícone ${exName}" class="w-full h-full object-contain bg-white p-1 group-hover/img:brightness-75 transition-all">
+                
+                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity duration-200 bg-black/20">
+                  <svg class="w-7 h-7 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+              </button>
+              <span class="font-extrabold text-slate-800 text-[13px] sm:text-[15px] leading-tight tracking-tight">${exName}</span>
+            </td>
+
+            <td class="p-2 w-12 sm:w-16">
+              <input type="text" ${disabledAttr} value="${exData.serie \vert{}\vert{} ''}" oninput="handleExerciseInput('${exName}', 'serie', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.serie ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
+            </td>
+            <td class="p-2 w-12 sm:w-16">
+              <input type="text" ${disabledAttr} value="${exData.rep \vert{}\vert{} ''}" oninput="handleExerciseInput('${exName}', 'rep', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.rep ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
+            </td>
+            <td class="p-2 w-14 sm:w-20">
+              <input type="text" ${disabledAttr} value="${exData.pausa \vert{}\vert{} ''}" oninput="handleExerciseInput('${exName}', 'pausa', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.pausa ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
+            </td>
+          </tr>
+        `}).join('');
+
+        card.innerHTML = `
+          <div class="p-3 border-b ${cat.color} font-bold text-sm sm:text-base flex justify-between items-center">
+            <span>${cat.category}</span>
+          </div>
+          <div class="overflow-x-auto scrollbar-hide">
+            <table class="w-full text-left border-collapse min-w-[400px]">
+              <thead>
+                <tr class="bg-slate-50 text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 border-b border-slate-200">
+                  <th class="p-2 text-center font-semibold">Treino</th>
+                  <th class="p-2 text-center font-semibold">Ord.</th>
+                  <th class="p-3 font-semibold text-slate-500">Exercício <span class="lowercase font-normal text-[9px]">(Clique na foto)</span></th>
+                  <th class="p-2 text-center font-semibold">Sér.</th>
+                  <th class="p-2 text-center font-semibold">Rep.</th>
+                  <th class="p-2 text-center font-semibold">Pausa</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-xs">${tableRows}</tbody>
+            </table>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    window.shareWhatsApp = function() {
+      const currentAthleteData = appData.athletes[appData.currentAthlete];
+      if (!currentAthleteData) return;
+      
+      const monthKey = `${currentYear}-${currentExerciseMonth}`;
+      const monthData = currentAthleteData.monthlyExercises[monthKey] || {};
+      const monthName = months[currentExerciseMonth];
+
+      let text = `🏋️‍♂️ *Treino de ${appData.currentAthlete} - ${monthName}/${currentYear}*\n`;
+      text += `Nível: ${currentAthleteData.level}\n`;
+      
+      if (currentFilter !== 'ALL') {
+        text += `Filtro Ativo: *Treino ${currentFilter}*\n`;
+      }
+      text += `\n`;
+
+      let hasExercisesToShare = false;
+
+      exercisesList.forEach(cat => {
+        let filteredItems = cat.items.filter(exName => {
+          if (currentFilter === 'ALL') return true; 
+          const exData = monthData[exName] || {};
+          const treinoAssinalado = (exData.treino || "").toUpperCase();
+          return treinoAssinalado.includes(currentFilter);
+        });
+
+        let categoryHasValidData = false;
+        let categoryText = `*${cat.category}*\n`;
+
+        filteredItems.forEach(exName => {
+          const exData = monthData[exName] || {};
+          if (exData.treino || exData.serie || exData.rep) {
+            categoryHasValidData = true;
+            hasExercisesToShare = true;
+            
+            const treinoStr = exData.treino ? `[${exData.treino.toUpperCase()}]` : `[-]`;
+            const ordemStr = exData.ordem ? `Ord ${exData.ordem}:` : `-`;
+            const serieStr = exData.serie || `-`;
+            const repStr = exData.rep || `-`;
+            const pausaStr = exData.pausa ? ` (${exData.pausa})` : ``;
+
+            categoryText += `${treinoStr} ${ordemStr} ${exName} | ${serieStr}x${repStr}${pausaStr}\n`;
+          }
+        });
+
+        if (categoryHasValidData) {
+          text += categoryText + `\n`;
+        }
+      });
+
+      if (!hasExercisesToShare) {
+        alert("Nenhum exercício com dados preenchidos foi encontrado na tela atual para compartilhar.");
+        return;
+      }
+
+      const encodedText = encodeURIComponent(text.trim());
+      window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
+    };
+
+    // Iniciar tudo 
+    loadCloudData();
+
+  </script>
+</body>
+</html>
