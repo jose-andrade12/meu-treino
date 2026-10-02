@@ -351,10 +351,10 @@
       });
     }
 
-    window.handleGoogleAuth = function() {
+window.handleGoogleAuth = function() {
       if (!currentUser) {
         const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithRedirect(provider).catch((error) => {
+        auth.signInWithPopup(provider).catch((error) => {
           alert("Erro ao realizar login com o Google: " + error.message);
           console.error(error);
         });
