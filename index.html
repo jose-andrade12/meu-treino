@@ -268,7 +268,7 @@
     };
 
     // 🔴 INSIRA SEU E-MAIL MASTER REAL DO GOOGLE AQUI:
-    const MASTER_EMAIL = "rss.andrade@gmail.com";
+    const MASTER_EMAIL = "seu-email-master@gmail.com";
 
     let db, auth;
     let isCloudEnabled = false;
@@ -800,6 +800,7 @@
 
     function initYearSelector() {
       const select = document.getElementById('year-selector');
+      if (!select) return;
       select.innerHTML = '';
       for (let y = 2024; y <= 2030; y++) {
         let opt = document.createElement('option');
@@ -812,6 +813,7 @@
 
     function initExerciseMonthSelector() {
       const select = document.getElementById('exercise-month-selector');
+      if (!select) return;
       select.innerHTML = '';
       months.forEach((m, idx) => {
         let opt = document.createElement('option');
