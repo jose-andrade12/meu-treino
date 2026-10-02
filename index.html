@@ -88,7 +88,7 @@
             <select id="athlete-selector" class="border border-blue-300 rounded p-1.5 font-bold text-blue-800 bg-blue-50 cursor-pointer text-sm" onchange="changeAthlete()">
             </select>
             <button onclick="addNewAthlete()" id="add-athlete-btn" class="hidden px-2 py-1.5 bg-blue-600 text-white text-xs font-bold rounded shadow hover:bg-blue-700 transition cursor-pointer" title="Adicionar Novo Perfil">＋</button>
-            <button onclick="deleteCurrentAthlete()" id="delete-athlete-btn" class="hidden px-2 py-1.5 bg-red-500 text-white text-xs font-bold rounded shadow hover:bg-red-600 transition cursor-pointer" title="Excluir Perfil Atual">🗑️️</button>
+            <button onclick="deleteCurrentAthlete()" id="delete-athlete-btn" class="hidden px-2 py-1.5 bg-red-500 text-white text-xs font-bold rounded shadow hover:bg-red-600 transition cursor-pointer" title="Excluir Perfil Atual">🗑️</button>
             
             <!-- EXIBIÇÃO DE E-MAIL DO PERFIL ATUAL -->
             <span id="current-athlete-email" class="hidden items-center gap-1 px-2 py-1.5 bg-slate-100 text-slate-500 text-[10px] sm:text-xs font-medium rounded border border-slate-200 truncate max-w-[200px]"></span>
@@ -301,10 +301,6 @@
     }
 
     if (auth) {
-      auth.getRedirectResult().catch((error) => {
-        console.error("Erro no redirecionamento do Google:", error);
-      });
-
       auth.onAuthStateChanged((user) => {
         currentUser = user;
         if (user) {
@@ -351,7 +347,8 @@
       });
     }
 
-window.handleGoogleAuth = function() {
+    // Método POPUP para login fluido no GitHub Pages
+    window.handleGoogleAuth = function() {
       if (!currentUser) {
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).catch((error) => {
@@ -437,7 +434,7 @@ window.handleGoogleAuth = function() {
           </div>
           <div class="flex items-center gap-2">
             <button onclick="approveAthlete('${userName}')" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white font-bold rounded shadow transition cursor-pointer">Aprovar ✅</button>
-            <button onclick="rejectAthlete('${userName}')" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white font-bold rounded shadow transition cursor-pointer">Recusar 🗑️</button>
+            <button onclick="rejectAthlete('${userName}')" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white font-bold rounded shadow transition cursor-pointer">Recusar 🗑️️</button>
           </div>
         `;
         list.appendChild(row);
@@ -461,7 +458,7 @@ window.handleGoogleAuth = function() {
         localStorage.setItem('treino_data', JSON.stringify(appData));
         if (isCloudEnabled) db.ref(`meu_treino_app/athletes/${userName}`).remove();
         refreshUI();
-        alert(`🗑️️ Perfil de "${userName}" excluído.`);
+        alert(`🗑️ Perfil de "${userName}" excluído.`);
       }
     };
 
