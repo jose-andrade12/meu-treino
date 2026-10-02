@@ -88,7 +88,7 @@
             <select id="athlete-selector" class="border border-blue-300 rounded p-1.5 font-bold text-blue-800 bg-blue-50 cursor-pointer text-sm" onchange="changeAthlete()">
             </select>
             <button onclick="addNewAthlete()" id="add-athlete-btn" class="hidden px-2 py-1.5 bg-blue-600 text-white text-xs font-bold rounded shadow hover:bg-blue-700 transition cursor-pointer" title="Adicionar Novo Perfil">＋</button>
-            <button onclick="deleteCurrentAthlete()" id="delete-athlete-btn" class="hidden px-2 py-1.5 bg-red-500 text-white text-xs font-bold rounded shadow hover:bg-red-600 transition cursor-pointer" title="Excluir Perfil Atual">🗑️</button>
+            <button onclick="deleteCurrentAthlete()" id="delete-athlete-btn" class="hidden px-2 py-1.5 bg-red-500 text-white text-xs font-bold rounded shadow hover:bg-red-600 transition cursor-pointer" title="Excluir Perfil Atual">🗑️️</button>
             
             <!-- EXIBIÇÃO DE E-MAIL DO PERFIL ATUAL -->
             <span id="current-athlete-email" class="hidden items-center gap-1 px-2 py-1.5 bg-slate-100 text-slate-500 text-[10px] sm:text-xs font-medium rounded border border-slate-200 truncate max-w-[200px]"></span>
@@ -461,7 +461,7 @@
         localStorage.setItem('treino_data', JSON.stringify(appData));
         if (isCloudEnabled) db.ref(`meu_treino_app/athletes/${userName}`).remove();
         refreshUI();
-        alert(`🗑️ Perfil de "${userName}" excluído.`);
+        alert(`🗑️️ Perfil de "${userName}" excluído.`);
       }
     };
 
@@ -1023,10 +1023,10 @@
           return `
           <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
             <td class="p-2 text-center w-12 sm:w-16">
-              <input type="text" ${disabledAttr} value="${exData.treino \vert{}\vert{} ''}" oninput="handleExerciseInput('${exName}', 'treino', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.treino ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
+              <input type="text" ${disabledAttr} value="${exData.treino || ''}" oninput="handleExerciseInput('${exName}', 'treino', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.treino ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
             <td class="p-2 text-center w-12 sm:w-16">
-              <input type="text" ${disabledAttr} value="${exData.ordem \vert{}\vert{} ''}" oninput="handleExerciseInput('${exName}', 'ordem', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.ordem ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
+              <input type="text" ${disabledAttr} value="${exData.ordem || ''}" oninput="handleExerciseInput('${exName}', 'ordem', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.ordem ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
             
             <!-- ÁREA DA FOTO E NOME DO EXERCÍCIO (VISUAL DE APP E MODAL) -->
@@ -1044,13 +1044,13 @@
             </td>
 
             <td class="p-2 w-12 sm:w-16">
-              <input type="text" ${disabledAttr} value="${exData.serie \vert{}\vert{} ''}" oninput="handleExerciseInput('${exName}', 'serie', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.serie ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
+              <input type="text" ${disabledAttr} value="${exData.serie || ''}" oninput="handleExerciseInput('${exName}', 'serie', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.serie ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
             <td class="p-2 w-12 sm:w-16">
-              <input type="text" ${disabledAttr} value="${exData.rep \vert{}\vert{} ''}" oninput="handleExerciseInput('${exName}', 'rep', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.rep ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
+              <input type="text" ${disabledAttr} value="${exData.rep || ''}" oninput="handleExerciseInput('${exName}', 'rep', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.rep ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
             <td class="p-2 w-14 sm:w-20">
-              <input type="text" ${disabledAttr} value="${exData.pausa \vert{}\vert{} ''}" oninput="handleExerciseInput('${exName}', 'pausa', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.pausa ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
+              <input type="text" ${disabledAttr} value="${exData.pausa || ''}" oninput="handleExerciseInput('${exName}', 'pausa', this, '${cat.inputHighlight}')" class="${baseInputClass} ${exData.pausa ? cat.inputHighlight : emptyClass} ${disabledStyle} uppercase">
             </td>
           </tr>
         `}).join('');
@@ -1087,13 +1087,13 @@
       const monthData = currentAthleteData.monthlyExercises[monthKey] || {};
       const monthName = months[currentExerciseMonth];
 
-      let text = `🏋️‍♂️ *Treino de ${appData.currentAthlete} - ${monthName}/${currentYear}*\n`;
-      text += `Nível: ${currentAthleteData.level}\n`;
+      let text = "🏋️‍♂️ *Treino de " + appData.currentAthlete + " - " + monthName + "/" + currentYear + "*\n";
+      text += "Nível: " + currentAthleteData.level + "\n";
       
       if (currentFilter !== 'ALL') {
-        text += `Filtro Ativo: *Treino ${currentFilter}*\n`;
+        text += "Filtro Ativo: *Treino " + currentFilter + "*\n";
       }
-      text += `\n`;
+      text += "\n";
 
       let hasExercisesToShare = false;
 
@@ -1106,7 +1106,7 @@
         });
 
         let categoryHasValidData = false;
-        let categoryText = `*${cat.category}*\n`;
+        let categoryText = "*" + cat.category + "*\n";
 
         filteredItems.forEach(exName => {
           const exData = monthData[exName] || {};
@@ -1114,18 +1114,18 @@
             categoryHasValidData = true;
             hasExercisesToShare = true;
             
-            const treinoStr = exData.treino ? `[${exData.treino.toUpperCase()}]` : `[-]`;
-            const ordemStr = exData.ordem ? `Ord ${exData.ordem}:` : `-`;
-            const serieStr = exData.serie || `-`;
-            const repStr = exData.rep || `-`;
-            const pausaStr = exData.pausa ? ` (${exData.pausa})` : ``;
+            const treinoStr = exData.treino ? "[" + exData.treino.toUpperCase() + "]" : "[-]";
+            const ordemStr = exData.ordem ? "Ord " + exData.ordem + ":" : "-";
+            const serieStr = exData.serie || "-";
+            const repStr = exData.rep || "-";
+            const pausaStr = exData.pausa ? " (" + exData.pausa + ")" : "";
 
-            categoryText += `${treinoStr} ${ordemStr} ${exName} | ${serieStr}x${repStr}${pausaStr}\n`;
+            categoryText += treinoStr + " " + ordemStr + " " + exName + " | " + serieStr + "x" + repStr + pausaStr + "\n";
           }
         });
 
         if (categoryHasValidData) {
-          text += categoryText + `\n`;
+          text += categoryText + "\n";
         }
       });
 
